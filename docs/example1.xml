@@ -1,0 +1,101 @@
+<!--
+//    Resound
+//    Copyright 2009 David Moore and James Mooney
+//
+//    This file is part of Resound.
+//
+//    Resound is free software; you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation; either version 2 of the License, or
+//    (at your option) any later version.
+//
+//    Resound is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+//
+//    You should have received a copy of the GNU General Public License
+//    along with Resound; if not, write to the Free Software
+//    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+-->
+<resoundnv>
+	<diskstream id="ch1" source="myfile.wav" channel="1" gain="0.2"/>
+	<diskstream id="ch2" source="myfile.wav" channel="2"/>
+	<cass id="S1">
+		<alias id="L" ref="ch1"/>
+		<alias id="R" ref="ch2"/>
+	</cass>
+
+	<livestream id="ch3" port="system:capture_1" gain="0.2"/>
+	<livestream id="ch4" port="system:capture_2" gain="1"/>
+	<cass id="Live1">
+		<alias id="L" ref="ch3"/>
+		<alias id="R" ref="ch4"/>
+	</cass>
+
+<loudspeaker id="G1" type="Genelec1029" x="-2" y="1" z="2" as="" el="" port="system:playback_1" gain="0.2"/>
+	<loudspeaker id="G2" type="Genelec1029" x="2" y="1" z="2" as="" el="" port="system:playback_2"/>
+	<loudspeaker id="G3" type="Genelec1029" x="-2" y="1" z="1" as="" el="" port="system:playback_1"/>
+	<loudspeaker id="G4" type="Genelec1030" x="2" y="1" z="1" as="" el="" port="system:playback_2"/>
+	<loudspeaker id="G5" type="Genelec1029" x="-2" y="1" z="0" as="" el="" port="system:playback_1"/>
+	<loudspeaker id="G6" type="Genelec1029" x="2" y="1" z="0" as="" el="" port="system:playback_2"/>
+	<loudspeaker id="G7" type="Genelec1029" x="-2" y="1" z="-1" as="" el="" port="system:playback_1"/>
+	<loudspeaker id="G8" type="Genelec1030" x="2" y="1" z="-1" as="" el="" port="system:playback_2"/>
+
+	<loudspeaker id="G9" type="Genelec1029" x="-2" y="3" z="2" as="" el="" port="system:playback_1"/>
+	<loudspeaker id="G10" type="Genelec1029" x="2" y="3" z="2" as="" el="" port="system:playback_2"/>
+	<loudspeaker id="G11" type="Genelec1029" x="-2" y="2" z="1" as="" el="" port="system:playback_1"/>
+	<loudspeaker id="G12" type="Genelec1030" x="2" y="3" z="1" as="" el="" port="system:playback_2"/>
+	<loudspeaker id="G13" type="Genelec1029" x="-2" y="3" z="0" as="" el="" port="system:playback_1"/>
+	<loudspeaker id="G14" type="Genelec1029" x="2" y="3" z="0" as="" el="" port="system:playback_2"/>
+	<loudspeaker id="G15" type="Genelec1029" x="-2" y="3" z="-1" as="" el="" port="system:playback_1"/>
+	<loudspeaker id="G16" type="Genelec1030" x="2" y="3" z="-1" as="" el="" port="system:playback_2"/>
+
+	<loudspeaker id="G17" type="Genelec1029" x="-3" y="1.5" z="2" as="" el="" port="system:playback_1"/>
+	<loudspeaker id="G18" type="Genelec1029" x="3" y="1.5" z="2" as="" el="" port="system:playback_2"/>
+	<loudspeaker id="G19" type="Genelec1029" x="-3" y="1.5" z="1" as="" el="" port="system:playback_1"/>
+	<loudspeaker id="G20" type="Genelec1030" x="3" y="1.5" z="1" as="" el="" port="system:playback_2"/>
+	<loudspeaker id="G21" type="Genelec1029" x="-3" y="0.2" z="0" as="" el="" port="system:playback_1"/>
+	<loudspeaker id="G22" type="Genelec1029" x="3" y="0.2" z="0" as="" el="" port="system:playback_2"/>
+	<loudspeaker id="G23" type="Genelec1029" x="-3" y="0.2" z="-1" as="" el="" port="system:playback_1"/>
+	<loudspeaker id="G24" type="Genelec1030" x="3" y="10.2" z="-1" as="" el="" port="system:playback_2"/>
+
+
+
+	<cls id="mains">
+		<alias id="L" ref="G21"/>
+		<alias id="R" ref="G22"/>
+	</cls>
+
+	<cls id="wides">
+		<alias id="L" ref="G23"/>
+		<alias id="R" ref="G24"/>
+	</cls>
+
+	<behaviour class="att" id="S1ToMains">
+		<!-- routes are stored in an array and are accesable by the behaviour as they wish
+			 they get validated by the system and become inbuffer -> outbuffer pairs
+			 dsp can do what it wants with the pairs of buffers
+			 individual routes will be created for each in to each out
+			 if an input or output refers to a cass or cls then routes are created appropriately
+
+			routsets are used to store multiple routings when plugins need this type of behaviour
+		-->
+		<routeset> 
+			<route from="Live1" to="mains" gain="0.1"/>
+			<route from="Live1" to="wides" gain="0.2"/>
+			<route from="Live1" to="wides" gain="0.5"/>	
+		</routeset>
+		<param id="level" address="/fader1"/>
+	</behaviour>
+
+	<behaviour class="att" id="LiveToMains">
+		<routeset>
+			<route from="Live1" to="mains"/>
+		</routeset>
+		<routeset> 
+			<route from="Live1" to="wides"/>
+		</routeset>
+		<param id="level" address="/fader1"/>
+	</behaviour>
+</resoundnv>
