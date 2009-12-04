@@ -1,23 +1,3 @@
-<!--
-//    Resound
-//    Copyright 2009 David Moore and James Mooney
-//
-//    This file is part of Resound.
-//
-//    Resound is free software; you can redistribute it and/or modify
-//    it under the terms of the GNU General Public License as published by
-//    the Free Software Foundation; either version 2 of the License, or
-//    (at your option) any later version.
-//
-//    Resound is distributed in the hope that it will be useful,
-//    but WITHOUT ANY WARRANTY; without even the implied warranty of
-//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//    GNU General Public License for more details.
-//
-//    You should have received a copy of the GNU General Public License
-//    along with Resound; if not, write to the Free Software
-//    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
--->
 <resoundnv>
 	<diskstream id="ch1" source="myfile.wav" channel="1" gain="0.2"/>
 	<diskstream id="ch2" source="myfile.wav" channel="2"/>
@@ -72,7 +52,7 @@
 		<alias id="R" ref="G24"/>
 	</cls>
 
-	<behaviour class="att" id="S1ToMains">
+<behaviour class="att" id="S1ToMains">
 		<!-- routes are stored in an array and are accesable by the behaviour as they wish
 			 they get validated by the system and become inbuffer -> outbuffer pairs
 			 dsp can do what it wants with the pairs of buffers
@@ -81,11 +61,38 @@
 
 			routsets are used to store multiple routings when plugins need this type of behaviour
 		-->
-		<routeset> 
+		<routeset>
+			<!-- AudioStream to Loudspeaker routings 
+				these are direct and so are simple to understand
+			-->
+			<route from="ch1" to="G23" gain="0.1"/>
+			<route from="ch2" to="G24" gain="0.2"/>
+		</routeset>
+		<routeset>
+			<!-- AudioStream to CLS routings
+				each single audio stream is mapped to all aliases in the CLS -->
+			<route from="ch1" to="mains" gain="0.1"/>
+			<route from="ch2" to="mains" gain="0.2"/>
+		</routeset>
+		<routeset>
+			<!-- CASS to Loudspeaker routings 
+				each alias in the CASS is to the single loudspeaker -->
+			<route from="Live1" to="G23" gain="0.1"/>
+			<route from="Live1" to="G24" gain="0.2"/>
+		</routeset>
+		<routeset>
+			<!-- CASS to CLS routings 
+				CASS aliases are matched to CLS aliases-->
 			<route from="Live1" to="mains" gain="0.1"/>
 			<route from="Live1" to="wides" gain="0.2"/>
 			<route from="Live1" to="wides" gain="0.5"/>	
 		</routeset>
+		<routeset>
+			<!--AudioStream to loudspeaker via CASS and CLS alias id 
+				CASS aliases are matched to CLS aliases-->
+			<route from="Live1.L" to="mains.R" gain="0.1"/>
+		</routeset>
+
 		<param id="level" address="/fader1"/>
 	</behaviour>
 
@@ -96,6 +103,18 @@
 		<routeset> 
 			<route from="Live1" to="wides"/>
 		</routeset>
+		<param id="level" address="/fader1"/>
+	</behaviour>
+	<!-- this is a differnt class of behviours which does not support routesets
+		 they are simpler in their interpretation of routing info
+
+		in the following we are expecting the behaviour to decide how to route its inputs to its outputs.
+		-->
+	<behaviour class="iobehaviour" id="B3">
+		<input ref="Live1"/> 
+		<input ref="S1"/>
+		<output ref="G23"/>
+		<output ref="G24"/>
 		<param id="level" address="/fader1"/>
 	</behaviour>
 </resoundnv>
