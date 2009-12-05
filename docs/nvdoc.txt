@@ -22,6 +22,22 @@ A multi-point cross-fade only considers consecutive pairs of routesets, dependin
 Doesn't need an ordered set - this is for where the behaviour is completely in control of the input to output distribution
 Example - plugin that does panning; just takes a number of inputs and outputs
 
+==routeset interpretation==
+Routeset interpretation presents the behaviour designer with a standard route mapping based on diffusion practice. It attempts to maintain CASS -> CLS structures correctly. Once constructed each routeset contains a individual paths from buffer to buffer. This is useful when the user is responsible for the mapping. Per route attributes may be set for the dsp to consider (gain for example). When a CASS or CLS is specified then the xml attributes are propagated to each interpreted sub route.
+
+				// Routeset interpretation for <route> xml element
+				// one of four input to output situations:
+				// 1) single to single: this is easy, create a direct path
+				// 2) set to single: again easy, every alias of the set is connected to the single
+				// 3) single to set: the single is connected to every alias of the set
+				// 4) set to set, connect matching alias names like for like
+				// 5).... further rules may be added possibly with regex matching
+
+==Separated input/ output interpretation==
+
+Separated input/ output interpretation (somewhat simpler interpretation) is considered when given inputs are to be mapped to outputs without regard to cass and cls constraints. CASS and CLS groups can be specified but are used as simple groups without (unless the behaviour has some dedicated reason for this) consideration of coherency. This is useful when the behaviour is making all the decisions about routing paths.
+
+
 ===
 
 BEHAVIOURS - some ideas
