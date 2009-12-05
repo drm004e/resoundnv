@@ -1,0 +1,112 @@
+<resoundnv>
+	<diskstream id="ch1" source="myfile.wav" channel="1"/>
+	<diskstream id="ch2" source="myfile.wav" channel="2"/>
+	<cass id="S1">
+		<alias id="L" ref="ch1"/>
+		<alias id="R" ref="ch2"/>
+	</cass>
+
+	<livestream id="ch3" source="capture_L"/>
+	<livestream id="ch4" source="capture_R"/>
+	<cass id="Live1">
+		<alias id="L" ref="ch3"/>
+		<alias id="R" ref="ch4"/>
+	</cass>
+
+	<audience id="audiencegp1" x="0" y="0" z="0" />
+
+	
+
+<loudspeaker id="circle1_-0" x="0.0" y="0.1" z="2.0"/>
+<loudspeaker id="circle1_-1" x="0.618033484007" y="0.1" z="1.90211319659"/>
+<loudspeaker id="circle1_-2" x="1.17556964587" y="0.1" z="1.61803461265"/>
+<loudspeaker id="circle1_-3" x="1.6180330529" y="0.1" z="1.17557179266"/>
+<loudspeaker id="circle1_-4" x="1.90211237659" y="0.1" z="0.618036007721"/>
+<loudspeaker id="circle1_-5" x="2.0" y="0.1" z="2.65358979336e-06"/>
+<loudspeaker id="circle1_-6" x="1.90211401659" y="0.1" z="-0.618030960292"/>
+<loudspeaker id="circle1_-7" x="1.61803617238" y="0.1" z="-1.17556749906"/>
+<loudspeaker id="circle1_-8" x="1.17557393946" y="0.1" z="-1.61803149316"/>
+<loudspeaker id="circle1_-9" x="0.618038531433" y="0.1" z="-1.90211155658"/>
+<loudspeaker id="circle1_-10" x="5.30717958671e-06" y="0.1" z="-1.99999999999"/>
+<loudspeaker id="circle1_-11" x="-0.618028436577" y="0.1" z="-1.90211483659"/>
+<loudspeaker id="circle1_-12" x="-1.17556535226" y="0.1" z="-1.61803773212"/>
+<loudspeaker id="circle1_-13" x="-1.61802993341" y="0.1" z="-1.17557608626"/>
+<loudspeaker id="circle1_-14" x="-1.90211073657" y="0.1" z="-0.618041055144"/>
+<loudspeaker id="circle1_-15" x="-1.99999999998" y="0.1" z="-7.96076938093e-06"/>
+<loudspeaker id="circle1_-16" x="-1.90211565659" y="0.1" z="0.61802591286"/>
+<loudspeaker id="circle1_-17" x="-1.61803929185" y="0.1" z="1.17556320546"/>
+<loudspeaker id="circle1_-18" x="-1.17557823305" y="0.1" z="1.61802837366"/>
+<loudspeaker id="circle1_-19" x="-0.618043578855" y="0.1" z="1.90210991655"/>
+<loudspeaker id="circle2_-0" x="0.0" y="1" z="1.0"/>
+<loudspeaker id="circle2_-1" x="0.707106312094" y="1" z="0.707107250279"/>
+<loudspeaker id="circle2_-2" x="0.999999999999" y="1" z="1.32679489668e-06"/>
+<loudspeaker id="circle2_-3" x="0.707108188464" y="1" z="-0.707105373907"/>
+<loudspeaker id="circle2_-4" x="2.65358979335e-06" y="1" z="-0.999999999996"/>
+<loudspeaker id="circle2_-5" x="-0.707104435718" y="1" z="-0.707109126647"/>
+<loudspeaker id="circle2_-6" x="-0.999999999992" y="1" z="-3.98038469047e-06"/>
+<loudspeaker id="circle2_-7" x="-0.707110064829" y="1" z="0.707103497529"/>
+<loudspeaker id="circle3_-0" x="0.0" y="3" z="2.0"/>
+<loudspeaker id="circle3_-1" x="0.813472639705" y="3" z="1.8270912031"/>
+<loudspeaker id="circle3_-2" x="1.48628870397" y="3" z="1.33826226445"/>
+<loudspeaker id="circle3_-3" x="1.90211237659" y="3" z="0.618036007721"/>
+<loudspeaker id="circle3_-4" x="1.9890440866" y="3" z="-0.209054111545"/>
+<loudspeaker id="circle3_-5" x="1.73205257663" y="3" z="-0.999996935897"/>
+<loudspeaker id="circle3_-6" x="1.17557393946" y="3" z="-1.61803149316"/>
+<loudspeaker id="circle3_-7" x="0.415828226759" y="3" z="-1.9562941716"/>
+<loudspeaker id="circle3_-8" x="-0.415817844349" y="3" z="-1.95629637845"/>
+<loudspeaker id="circle3_-9" x="-1.17556535226" y="3" z="-1.61803773212"/>
+<loudspeaker id="circle3_-10" x="-1.73204726944" y="3" z="-1.0000061282"/>
+<loudspeaker id="circle3_-11" x="-1.98904297709" y="3" z="-0.209064667756"/>
+<loudspeaker id="circle3_-12" x="-1.90211565659" y="3" z="0.61802591286"/>
+<loudspeaker id="circle3_-13" x="-1.48629580635" y="3" z="1.33825437643"/>
+<loudspeaker id="circle3_-14" x="-0.813482336395" y="3" z="1.82708688583"/>
+
+<loudspeaker id="G1" type="Genelec1029" x="-2" y="1" z="2" as="" el="" port="playback_1"/>
+	<loudspeaker id="G2" type="Genelec1029" x="2" y="1" z="2" as="" el="" port="playback_2"/>
+	<loudspeaker id="G3" type="Genelec1029" x="-2" y="1" z="1" as="" el="" port="playback_3"/>
+	<loudspeaker id="G4" type="Genelec1030" x="2" y="1" z="1" as="" el="" port="playback_4"/>
+	<loudspeaker id="G5" type="Genelec1029" x="-2" y="1" z="0" as="" el="" port="playback_5"/>
+	<loudspeaker id="G6" type="Genelec1029" x="2" y="1" z="0" as="" el="" port="playback_6"/>
+	<loudspeaker id="G7" type="Genelec1029" x="-2" y="1" z="-1" as="" el="" port="playback_7"/>
+	<loudspeaker id="G8" type="Genelec1030" x="2" y="1" z="-1" as="" el="" port="playback_8"/>
+
+	<loudspeaker id="G9" type="Genelec1029" x="-2" y="3" z="2" as="" el="" port="playback_9"/>
+	<loudspeaker id="G10" type="Genelec1029" x="2" y="3" z="2" as="" el="" port="playback_10"/>
+	<loudspeaker id="G11" type="Genelec1029" x="-2" y="2" z="1" as="" el="" port="playback_11"/>
+	<loudspeaker id="G12" type="Genelec1030" x="2" y="3" z="1" as="" el="" port="playback_12"/>
+	<loudspeaker id="G13" type="Genelec1029" x="-2" y="3" z="0" as="" el="" port="playback_13"/>
+	<loudspeaker id="G14" type="Genelec1029" x="2" y="3" z="0" as="" el="" port="playback_14"/>
+	<loudspeaker id="G15" type="Genelec1029" x="-2" y="3" z="-1" as="" el="" port="playback_15"/>
+	<loudspeaker id="G16" type="Genelec1030" x="2" y="3" z="-1" as="" el="" port="playback_16"/>
+
+	<loudspeaker id="G17" type="Genelec1029" x="-3" y="1.5" z="2" as="" el="" port="playback_9"/>
+	<loudspeaker id="G18" type="Genelec1029" x="3" y="1.5" z="2" as="" el="" port="playback_10"/>
+	<loudspeaker id="G19" type="Genelec1029" x="-3" y="1.5" z="1" as="" el="" port="playback_11"/>
+	<loudspeaker id="G20" type="Genelec1030" x="3" y="1.5" z="1" as="" el="" port="playback_12"/>
+	<loudspeaker id="G21" type="Genelec1029" x="-3" y="0.2" z="0" as="" el="" port="playback_13"/>
+	<loudspeaker id="G22" type="Genelec1029" x="3" y="0.2" z="0" as="" el="" port="playback_14"/>
+	<loudspeaker id="G23" type="Genelec1029" x="-3" y="0.2" z="-1" as="" el="" port="playback_15"/>
+	<loudspeaker id="G24" type="Genelec1030" x="3" y="10.2" z="-1" as="" el="" port="playback_16"/>
+
+
+
+	<cls id="mains">
+		<alias id="L" ref="G21"/>
+		<alias id="R" ref="G22"/>
+	</cls>
+
+	<cls id="wides">
+		<alias id="L" ref="G23"/>
+		<alias id="R" ref="G24"/>
+	</cls>
+
+	<behaviour class="att" id="S1ToMains">
+		<path from="S1" to="mains"/>
+		<parameter id="level" address="/fader1"/>
+	</behaviour>
+
+	<behaviour class="att" id="LiveToMains">
+		<path from="Live" to="mains"/>
+		<parameter id="level" address="/fader2"/>
+	</behaviour>
+</resoundnv>
