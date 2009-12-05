@@ -1,0 +1,73 @@
+This file is part of Resound
+Copyright 2009 Dave Moore and James Mooney
+
+===
+
+Beginnings of XML documentation:
+
+Two types of behaviour class
+
+1. routeset interpretation
+You can map:
+	audiostream to loudspeaker
+	audiostream to cls (one to many)
+	cass to loudspeaker (many to one)
+	cass to cls (many to many)
+
+Examples.
+A simple attenuator would only consider one routeset.
+A multi-point cross-fade only considers consecutive pairs of routesets, depending on the position of the fader.
+
+2. iobehaviour interpretation
+Doesn't need an ordered set - this is for where the behaviour is completely in control of the input to output distribution
+Example - plugin that does panning; just takes a number of inputs and outputs
+
+===
+
+BEHAVIOURS - some ideas
+
+Some of these would benefit from having 'crossfade time' and 'rate random factor' parameters. See below.
+
+* Multipoint cross fade. It would be good to have two versions; "wrapping" and "non-wrapping." The wrapping version crossfades between routesets, and when it gets to the last routeset it wraps around to the first. The non-wrapping version (which is probably more useful in fact) begins on the first routeset only, and (when the 'pos' parameter is at maximum value) ends with the last routeset only, NOT wrapping back to the first. It would be good to have a 'crossfade time' parameter. At a value of 1, you'd get equal-power panning; at a value of 0 you'd get no crossfade at all; the signals would jump instantaneously from one routeset to the next at the appropriate point of the crossfade.
+
+* Random. (Could this also be considered 'spatial granulation?' Would there be any difference?) Again, with 'crossfade time' parameter in addition to rate. Perhaps also 'rate random factor' parameter, which applies a random offset to the rate at which routesets are selected.
+
+* Chase/Mexican Wave. This is always good. Again, would benefit from 'crossfade time' and 'rate random factor' parameters.
+
+* Amplitude panner. Based on x, y and z parameters. Perhaps this could be implementation of Ricochet? i.e. it could operate with or without doppler shift.
+
+* Spectral granulation.
+
+* Ambisonic. CASS is treated as B-Format (or 2nd order) Ambisonic. CLS is the array that it decodes to. Possibility of parameters performing matrix transformations on the B-Format: rotate, tumble, tilt, etc. Stuff in the literature on Ambisonics about this.
+
+* Perhaps some 'triggered' behaviours (as opposed to behaviours that have continuously variable parameters)? TBC.
+
+* 'Gated' behaviours. Where the amplitude of the incoming audio makes a difference to the spatialisation. TBC.
+
+===
+
+James To Do
+
+Python graphical tools using PyGTK or PyQT.
+
+- PD patch that implements 32 faders, each of which outputs osc messages /fader1 etc
+
+- PD patch that generates 24 output channels
+
+- Python app to read XML and respond to levelMeter data from server, acting as a three-dimensional
+
+Python driver to manage concert
+- stops server
+- loads different XML file for the next piece (there is one for each piece)
+- restarts server
+
+- Python app to generate loudspeaker XML
+- Creates mirrored loudspeaker pairs (or could be "stereo" "quad" "octo")
+- and creates CLSes to go with them
+- creates diskstream (from file dialog)
+- and creates a CASS to go with it
+
+For pieces that use the same config - we can use #include
+
+Online parameters - e.g. faders: parameters that change during the concert
+Offline parameters - structural things - don't change during concert
