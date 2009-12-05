@@ -1,0 +1,132 @@
+<resoundnv>
+	<!--
+//    Resound
+//    Copyright 2009 David Moore and James Mooney
+//
+//    This file is part of Resound.
+//
+//    Resound is free software; you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation; either version 2 of the License, or
+//    (at your option) any later version.
+//
+//    Resound is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+//
+//    You should have received a copy of the GNU General Public License
+//    along with Resound; if not, write to the Free Software
+//    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+		A simple stereo live feed to eight speakers test with test8.pd 
+	-->
+	<livestream id="pd1" port="pure_data_0:output0" gain="1"/>
+	<livestream id="pd2" port="pure_data_0:output1" gain="1"/>
+	<cass id="source1">
+		<alias id="L" ref="pd1"/>
+		<alias id="R" ref="pd2"/>
+	</cass>
+
+	<cass id="mono8">
+		<alias id="L" ref="pd1"/>
+		<alias id="R" ref="pd2"/>
+		<alias id="WL" ref="pd1"/>
+		<alias id="WR" ref="pd2"/>
+		<alias id="SL" ref="pd1"/>
+		<alias id="SR" ref="pd2"/>
+		<alias id="RL" ref="pd1"/>
+		<alias id="RR" ref="pd2"/>
+	</cass>
+
+	<loudspeaker id="G1" type="Genelec1029" x="-2" y="1" z="2" as="" el="" port="pure_data_0:input0"/>
+	<loudspeaker id="G2" type="Genelec1029" x="2" y="1" z="2" as="" el="" port="pure_data_0:input1"/>
+	<loudspeaker id="G3" type="Genelec1029" x="-2" y="1" z="1" as="" el="" port="pure_data_0:input2"/>
+	<loudspeaker id="G4" type="Genelec1030" x="2" y="1" z="1" as="" el="" port="pure_data_0:input3"/>
+	<loudspeaker id="G5" type="Genelec1029" x="-2" y="1" z="0" as="" el="" port="pure_data_0:input4"/>
+	<loudspeaker id="G6" type="Genelec1029" x="2" y="1" z="0" as="" el="" port="pure_data_0:input5"/>
+	<loudspeaker id="G7" type="Genelec1029" x="-2" y="1" z="-1" as="" el="" port="pure_data_0:input6"/>
+	<loudspeaker id="G8" type="Genelec1030" x="2" y="1" z="-1" as="" el="" port="pure_data_0:input7"/>
+
+	<cls id="mains">
+		<alias id="L" ref="G1"/>
+		<alias id="R" ref="G2"/>
+	</cls>
+	<cls id="wides">
+		<alias id="L" ref="G3"/>
+		<alias id="R" ref="G4"/>
+	</cls>
+	<cls id="sides">
+		<alias id="L" ref="G5"/>
+		<alias id="R" ref="G6"/>
+	</cls>
+	<cls id="rears">
+		<alias id="L" ref="G7"/>
+		<alias id="R" ref="G8"/>
+	</cls>
+	<cls id="leftPair">	
+		<alias id="R" ref="G3"/>
+		<alias id="L" ref="G5"/>
+	</cls>
+	<cls id="rightPair">	
+		<alias id="L" ref="G4"/>
+		<alias id="R" ref="G6"/>
+	</cls>
+	<cls id="8rig">	
+		<alias id="L" ref="G1"/>
+		<alias id="R" ref="G2"/>
+		<alias id="WL" ref="G3"/>
+		<alias id="WR" ref="G4"/>
+		<alias id="SL" ref="G5"/>
+		<alias id="SR" ref="G6"/>
+		<alias id="RL" ref="G7"/>
+		<alias id="RR" ref="G8"/>
+	</cls>
+<!--
+	<behaviour class="att" id="source_to_mains">
+		<routeset>
+			<route from="source1" to="mains" gain = "0.5"/>
+		</routeset>
+		<param id="level" address="/fader1"/>
+	</behaviour>
+
+	<behaviour class="att" id="source_to_wides">
+		<routeset>
+			<route from="source1" to="wides"/>
+		</routeset>
+		<param id="level" address="/fader2"/>
+	</behaviour>
+
+	<behaviour class="att" id="source_to_sides">
+		<routeset>
+			<route from="source1" to="sides"/>
+		</routeset>
+		<param id="level" address="/fader3"/>
+	</behaviour>
+
+	<behaviour class="att" id="source_to_rears">
+		<routeset>
+			<route from="source1" to="rears"/>
+		</routeset>
+		<param id="level" address="/fader4"/>
+	</behaviour>
+-->
+	<behaviour class="att" id="prop_group1">
+		<routeset>
+			<route from="source1" to="rightPair" gain = "1"/>
+		</routeset>
+		<param id="level" address="/fader1"/>
+	</behaviour>
+	<behaviour class="att" id="prop_group2">
+		<routeset>
+			<route from="source1" to="rightPair" gain = "-1"/>
+		</routeset>
+		<param id="level" address="/fader2"/>
+	</behaviour>
+	<behaviour class="att" id="8chan_automapping">
+		<routeset>
+			<route from="mono8" to="8rig" gain = "1"/>
+		</routeset>
+		<param id="level" address="/fader3"/>
+	</behaviour>
+
+</resoundnv>
