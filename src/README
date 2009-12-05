@@ -1,0 +1,19 @@
+WARNING: very early code, you have been warned.
+
+Building:
+
+Check dependencies, you will likely need -dev versions of libjack and liblo
+liblo0-dev libjack-dev
+Probably lots more too.
+
+cmake .
+make
+
+usage:
+You can use PD Extended to test the server 'test8.pd' will give you a start.
+You must set pd to use Jack with 8 inputs and outputs and enable dsp before loading resoundnv.
+
+run resoundnv as follows:
+
+./resoundnv-server test8.xml  
+
