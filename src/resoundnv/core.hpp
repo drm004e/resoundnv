@@ -311,9 +311,17 @@ public:
 /// behaviours are created by factory function as follows
 typedef Behaviour* (*BehaviourFactory)(const xmlpp::Node* node, ResoundSession*);
 
+struct CLIOptions{
+	std::string inputXML_;
+	std::string oscPort_;
+};
+
 /// a resound session will read a single xml file and register all jack and disk streams
 class ResoundSession : public JackEngine, public Resound::OSCManager{
 private:
+	/// options specified
+	CLIOptions options_;
+
 	/// a map of all dynamic objects, used as an index to keep all names unique
 	/// also enables rtti from any of the dynamic objects
 	typedef std::map<ObjectId,DynamicObject*> DynamicObjectMap;
@@ -335,7 +343,7 @@ private:
 
 public:
 	/// construct a new session from the xml file specified
-	ResoundSession();
+	ResoundSession(CLIOptions options);
 
 	/// reset everything and load from xml - ideally we do this with a new session object
 	void load_from_xml(const xmlpp::Node* node);

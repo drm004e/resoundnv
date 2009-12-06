@@ -7,13 +7,14 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules")
 #include(UsePkgConfig)
 #PKGCONFIG(libxml++-2.6 LIBXML_INCLUDE_DIRS LIBXML_LIB_DIRS LIBXML_LINK_FLAGS LIBXML_CFLAGS)
 
+find_package(Boost REQUIRED)
 find_package(Glib REQUIRED)
 find_package(LibXML2 REQUIRED)
 find_package(LibXML++ REQUIRED)
 find_package(Jack REQUIRED)
 # TODO could do with a proper check for liblo here
 include_directories(${LibXML++_INCLUDE_DIRS} ${JACK_INCLUDE_DIRS})
-set(LIBS ${LIBS} ${LibXML++_LIBRARIES} ${JACK_LIBRARIES} lo)
+set(LIBS ${LIBS} ${LibXML++_LIBRARIES} ${JACK_LIBRARIES} lo boost_program_options)
 
 
 

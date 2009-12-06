@@ -23,6 +23,8 @@
 
 #include <cmath>
 
+#include <boost/program_options.hpp>
+
 AudioBuffer::AudioBuffer() : buffer_(0) {
 }
 AudioBuffer::~AudioBuffer(){
@@ -493,7 +495,9 @@ void AttBehaviour::process(jack_nframes_t nframes){
 	//std::cout << "AttBehaviour::process" << std::endl;
 }
 
-ResoundSession::ResoundSession() : Resound::OSCManager("8000") {
+ResoundSession::ResoundSession(CLIOptions options) : 
+		Resound::OSCManager(options.oscPort_.c_str()),
+		options_(options) {
 	// registering some factories
 	register_behaviour_factory("minimal", MinimalRouteSetBehaviour::factory);
 	register_behaviour_factory("att", AttBehaviour::factory); // for now
@@ -647,16 +651,55 @@ int ResoundSession::on_process(jack_nframes_t nframes){
 	return 0;
 }
 
+// ------------------------------- Globals and entry point -----------------------------------
 
+CLIOptions g_options;
 
-void load_from_xml(const std::string path){
+void parse_command_arguments(int argc, char** argv){
+	// making use of boost::program options to deal with command arguments
+	namespace po = boost::program_options;
+
+	po::options_description desc("Usage: resoundnv-server");
+	desc.add_options()
+		("help", "Display this help message.")
+		("input", po::value<std::string>(&g_options.inputXML_)->default_value(""), "Input resound xml file, must be set!")
+		("port", po::value<std::string>(&g_options.oscPort_)->default_value("8000"), "OSC listening port")
+		//("record", po::value<std::string>(), "Record loudspeakers to wav file <filename>.")
+		//("simulate", po::value<int>(), "Loudspeakers are simulated as point sources")
+
+	;
+
+	po::variables_map vm;
+	po::store(po::parse_command_line(argc, argv, desc), vm);
+	po::notify(vm);    
+
+	if (vm.count("help")) {
+		std::cout << desc << "\n";
+		exit(1);
+	}
+
+	if (g_options.inputXML_ == ""){
+		std::cout << "Cannot continue, input resound XML file must be specified!\n";
+		std::cout << desc << "\n";
+		exit(1);
+	}
+
+}
+
+int main(int argc, char** argv){
+
+	parse_command_arguments(argc,argv);
+	// for now we take the first arg and use it as the filename for xml
+	std::cout << "resoundnv server v0.0.1\n";
+	std::cout << "Loading config from " << g_options.inputXML_ << std::endl;
+
 	// loading and parsing the xml
 //	try
 //	{
 		xmlpp::DomParser parser;
 		parser.set_validate(false);
 		parser.set_substitute_entities(); //We just want the text to be resolved/unescaped automatically.
-		parser.parse_file(path);
+		parser.parse_file(g_options.inputXML_);
 		if(parser){
 			const xmlpp::Node* pNode = parser.get_document()->get_root_node(); //deleted by DomParser.
 			const xmlpp::Element* nodeElement = dynamic_cast<const xmlpp::Element*>(pNode);
@@ -665,7 +708,7 @@ void load_from_xml(const std::string path){
 				std::string name = nodeElement->get_name();
 				if(name=="resoundnv"){
 					std::cout << "Resoundnv XML node found, building session.\n";
-					ResoundSession* session = new ResoundSession();
+					ResoundSession* session = new ResoundSession(g_options);
 					session->load_from_xml(nodeElement);
 				}
 			}
@@ -676,21 +719,8 @@ void load_from_xml(const std::string path){
 //		std::cout << "Server cannot continue"<< std::endl;
 //		std::exit(1);
 //	}
-}
 
-
-
-int main(int argc, char** argv){
-
-	// for now we take the first arg and use it as the filename for xml
-	std::cout << "resoundnv server v0.0.1\n";
-	if(argc < 2){ 
-		std::cout << "You must specify a config file!\n\tUsage: resoundnv-server file.xml"<<std::endl; 
-		exit(1);
-	}
-	std::cout << "Loading config from " << argv[1] << std::endl;
-	load_from_xml(argv[1]);
-	while(1){
+	while(1){ // TODO this should really listen for incoming signals, see unix programming book.
 		usleep(10000);
 	}
 }
