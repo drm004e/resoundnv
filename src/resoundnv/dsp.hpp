@@ -18,6 +18,7 @@
 //    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #pragma once
+#include <cassert>
 #include <cstring>
 #include <cmath>
 
@@ -88,9 +89,10 @@ public:
 	void tick(){ 
 		phase_ += step_; 
 		if(phase_>1.0f){phase_ -= 1.0f; return;}
-		if(phase_<0.0f){phase_ += 1.0f; return;}
+		if(phase_<0.0f){phase_ += 1.0f;}
 	}
-	void set_freq(float freq){ 
+	void set_freq(float freq){
+		assert(freq <= SR_); // beacause this would cause problems in the tick code
 		freq_ = freq;
 		step_ = freq_/SR_;
 	}
