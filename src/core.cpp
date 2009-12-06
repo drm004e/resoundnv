@@ -25,7 +25,6 @@
 
 #include <boost/program_options.hpp>
 
-#include "resoundnv/dsp.hpp"
 
 AudioBuffer::AudioBuffer() : buffer_(0) {
 }
@@ -397,6 +396,7 @@ BParam::BParam(const xmlpp::Node* node, ResoundSession* session){
 	const xmlpp::Element* nodeElement = get_element(node);
 	id_ = get_attribute_string(nodeElement,"id");
 	addr_ = get_attribute_string(nodeElement,"address");
+	value_ = get_optional_attribute_float(nodeElement,"value");
 	std::cout << "Found parameter "<<id_<< " osc address " << addr_ << std::endl;
 	// at this point we should register the parameter address with osc
 	session->add_method(addr_,"f", BParam::lo_cb_params, this);	
@@ -497,13 +497,69 @@ void AttBehaviour::process(jack_nframes_t nframes){
 	//std::cout << "AttBehaviour::process" << std::endl;
 }
 
+MultipointCrossfadeBehaviour::MultipointCrossfadeBehaviour(const xmlpp::Node* node, ResoundSession* session) 
+		: RouteSetBehaviour(node,session){	
+	std::cout << "Created MultipointCrossfade routeset behaviour object!" << std::endl;
+	// right much work for this algorithm is based on the concept of scaling, offseting and clipping the range 0 - 1
+	// see pd patch phasor-chase-algorithm.pd
+	
+	// OSC BParams for fader "position" 0 - 1, gain factor "gain" and "slope", slope controls the mapping function
+
+	// Algorithm uses scales and offsets the position range such that we get a set of 0-1 indexs for each of the routesets
+	// the indexs are used to table lookup into a hanning window function which is then applied modified by apropriate factors.
+	
+	position_ = get_parameter_value("position");
+	gain_= get_parameter_value("gain");
+	slope_= get_parameter_value("slope");
+
+	hannFunction = LookupTable::create_hann(HANN_TABLE_SIZE);
+}
+void MultipointCrossfadeBehaviour::process(jack_nframes_t nframes){
+
+	
+	
+	const BRouteSetArray& routeSets = get_route_sets();
+	int numRoutes = routeSets.size();
+	float N = (float)numRoutes;
+	slope_= clip(get_parameter_value("slope"),1,1000); // TODO this would be better with a clip_lower_bound function
+
+	position_ = clip(get_parameter_value("position"),0,1) * slope_;
+	gain_= get_parameter_value("gain");
+
+	float f = slope_;
+	// offset factor (1-1/f)/(N-1)*f
+	float offsetFactor = (1.0f - 1.0f/f)/(N-1.0f)*f;
+	
+	if(numRoutes > 0){
+		for(int setNum = 0; setNum < numRoutes; ++setNum){
+			float i = zero_outside_bounds( position_ - offsetFactor * (float)setNum, 0.0f, 1.0f);
+			float routeSetGain = hannFunction->lookup_linear(i * (float)HANN_TABLE_SIZE ) * gain_;
+
+			const BRouteArray& routes = routeSets[setNum]->get_routes();
+			
+			// dsp for each route
+			for(unsigned int n = 0; n < routes.size(); ++n){
+				AudioBuffer* from = routes[n].get_from();
+				AudioBuffer* to = routes[n].get_to();
+				float gain = routes[n].get_gain();
+				ab_sum_with_gain(from->get_buffer(), to->get_buffer(), nframes, gain * routeSetGain);
+			}
+		}
+	}
+
+}
+
 ResoundSession::ResoundSession(CLIOptions options) : 
 		Resound::OSCManager(options.oscPort_.c_str()),
 		options_(options) {
 	// registering some factories
+
+	register_behaviour_factory("att", AttBehaviour::factory);
+	register_behaviour_factory("mpc", MultipointCrossfadeBehaviour::factory);
+
 	register_behaviour_factory("minimal", MinimalRouteSetBehaviour::factory);
-	register_behaviour_factory("att", AttBehaviour::factory); // for now
 	register_behaviour_factory("iobehaviour", MinimalIOBehaviour::factory); // for now
+
 	init("resoundnv-session");
 	start();
 }

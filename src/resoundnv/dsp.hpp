@@ -112,6 +112,13 @@ inline float wrap(float op){return std::fmod(op,1.0f);}
 inline float zero_outside_bounds(float v, float lower, float upper){
 	if(v < lower) return 0.0f;
 	if(v > upper) return 0.0f;
+	return v;
+}
+/// clipping function
+inline float clip(float v, float lower, float upper){
+	if(v < lower) return lower;
+	if(v > upper) return upper;
+	return v;
 }
 
 /// some testing code

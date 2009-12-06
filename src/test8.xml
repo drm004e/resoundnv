@@ -109,7 +109,7 @@
 		</routeset>
 		<param id="level" address="/fader4"/>
 	</behaviour>
--->
+
 	<behaviour class="att" id="prop_group1">
 		<routeset>
 			<route from="source1" to="rightPair" gain = "1"/>
@@ -127,6 +127,17 @@
 			<route from="mono8" to="8rig" gain = "1"/>
 		</routeset>
 		<param id="level" address="/fader3"/>
+	</behaviour>
+-->
+
+	<behaviour class="mpc" id="multipoint_front_to_rear">
+		<routeset><route from="source1" to="mains" gain = "1"/></routeset>
+		<routeset><route from="source1" to="wides" gain = "1"/></routeset>
+		<routeset><route from="source1" to="sides" gain = "1"/></routeset>
+		<routeset><route from="source1" to="rears" gain = "1"/></routeset>
+		<param id="position" address="/fader4" value="0.0"/>
+		<param id="gain" address="/fader5" value="1.0"/>
+		<param id="slope" address="/fader6" value="3"/>
 	</behaviour>
 
 </resoundnv>
