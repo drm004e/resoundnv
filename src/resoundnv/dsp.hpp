@@ -18,7 +18,7 @@
 //    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #pragma once
-#include <cstdlib>
+#include <cstring>
 #include <cmath>
 
 const float PI=3.14159;
@@ -27,11 +27,10 @@ const float HALFPI=0.5f*PI;
 
 class LookupTable{
 private:
-	float* values_;
 	size_t size_;
+	float* values_;
 public:
-	LookupTable():values_(0){}
-	LookupTable(size_t size) : size_(size+1), values_(new float[size_]) {} // a guard point is added to make interp easier
+	LookupTable(size_t size) : size_(size+1), values_(new float[size+1]) {} // a guard point is added to make interp easier
 	~LookupTable(){ if(values_) delete[] values_; }
 	float lookup(float index){ return values_[(int)index]; }
 	float lookup_linear(float index) {
@@ -43,41 +42,46 @@ public:
 		return (r-l)*f + l;
 	}
 	static LookupTable* create_empty(size_t size){
-		Table* t = new Table(size);
+		LookupTable* t = new LookupTable(size);
 		std::memset(t->values_,0,sizeof(float)*(size+1));
+		return t;
 	}
 	static LookupTable* create_sine(size_t size){
 		float rSize = 1.0f/(float)size;
-		Table* t = new Table(size); 
-		for(int n=0; n<size; ++n){
+		LookupTable* t = new LookupTable(size); 
+		for(size_t n=0; n<size; ++n){
 			t->values_[n] = std::sin(TWOPI * n * rSize);
 		}
 		t->values_[size+1] = t->values_[size]; // guard
+		return t;
 	}
 	static LookupTable* create_cosine(size_t size){
 		float rSize = 1.0f/(float)size;
-		Table* t = new Table(size);
-		for(int n=0; n<size; ++n){
+		LookupTable* t = new LookupTable(size);
+		for(size_t  n=0; n<size; ++n){
 			t->values_[n] = std::cos(TWOPI * n * rSize);
 		}
 		t->values_[size+1] = t->values_[size]; // guard
+		return t;
 	}
 	static LookupTable* create_hann(size_t size){
 		float rSize = 1.0f/(float)size;
-		Table* t = new Table(size);
-		for(int n=0; n<size; ++n){
-			t->values_[n] = 0.5f + (1.0f - std::cos(TWOPI * n / rSize-1);
+		LookupTable* t = new LookupTable(size);
+		for(size_t n=0; n<size; ++n){
+			t->values_[n] = 0.5f + (1.0f - std::cos(TWOPI * n / (rSize-1)));
 		}
 		t->values_[size+1] = t->values_[size]; // guard
+		return t;
 	}
 };
 
 class Phasor{
 private:
-	float step_; // step per sample calculated when setting frequency
-	float phase_; // current value and therefore phase between 0 and 1
-	float freq_; // the last frequency set
 	float SR_; // sample rate
+	float phase_; // current value and therefore phase between 0 and 1
+	float step_; // step per sample calculated when setting frequency
+	float freq_; // the last frequency set
+	
 public:
 	Phasor(float SR, float phase, float freq) : SR_(SR), phase_(phase) { set_freq(freq_); }
 	float get_phase() { return phase_; }
@@ -88,7 +92,7 @@ public:
 	}
 	void set_freq(float freq){ 
 		freq_ = freq;
-		step_ = freq_/SR;
+		step_ = freq_/SR_;
 	}
 };
 
