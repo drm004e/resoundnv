@@ -1,4 +1,4 @@
-#N canvas 72 58 1227 784 10;
+#N canvas 22 58 1182 649 10;
 #X obj 125 -180 osc~ 440;
 #X obj 162 47 adc~ 1 2 3 4 5 6 7 8;
 #X obj 140 113 env~;
@@ -24,7 +24,7 @@
 #X obj 271 -256 metro 1000;
 #X msg 268 -284 1;
 #X obj 272 -230 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1
-1 1;
+0 1;
 #X obj 336 -143 line~;
 #X msg 336 -173 1 \, 0 500;
 #X obj 273 -110 *~;
@@ -37,15 +37,15 @@
 #X obj 593 -198 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
 -1 -1;
 #X msg 584 -252 1;
-#X obj 525 14 dumpOSC 8001;
+#X obj 412 29 dumpOSC 8001;
 #X msg 595 -135 send /syn 8001;
-#X obj 525 49 OSCroute /ack;
-#X obj 525 91 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144 -1
--1;
+#X obj 412 64 OSCroute /ack;
+#X obj 412 106 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
 #X text 433 -320 active clients must send a period /syn in order to
 recieve data back;
 #X obj 797 -326 vsl 15 128 0 1 0 0 empty empty empty 0 -9 0 10 -262144
--1 -1 12700 1;
+-1 -1 0 1;
 #X floatatom 792 -178 5 0 0 0 - - -;
 #X obj 789 -148 expr pow($f1 \, 4);
 #X floatatom 791 -119 5 0 0 0 - - -;
@@ -57,12 +57,20 @@ recieve data back;
 #X msg 861 -89 send /fader2 \$1;
 #X obj 182 -180 osc~ 320;
 #X obj 1029 -322 vsl 15 128 0 1 0 0 empty empty empty 0 -9 0 10 -262144
--1 -1 5000 1;
+-1 -1 0 1;
 #X floatatom 1024 -174 5 0 0 0 - - -;
 #X obj 1021 -144 expr pow($f1 \, 4);
 #X floatatom 1023 -115 5 0 0 0 - - -;
 #X msg 975 -88 send /fader3 \$1;
 #X obj 907 -145 expr pow($f1 \, 4);
+#X obj 778 -53 vsl 15 128 0 1 0 0 empty empty empty 0 -9 0 10 -262144
+-1 -1 7600 1;
+#X floatatom 774 104 5 0 0 0 - - -;
+#X msg 724 181 send /fader4 \$1;
+#X floatatom 960 58 5 0 0 0 - - -;
+#X msg 841 186 send /fader5 \$1;
+#X floatatom 1037 41 5 0 0 0 - - -;
+#X msg 982 188 send /fader6 \$1;
 #X connect 0 0 18 0;
 #X connect 1 0 4 0;
 #X connect 1 1 6 0;
@@ -115,3 +123,10 @@ recieve data back;
 #X connect 54 0 55 0;
 #X connect 55 0 29 0;
 #X connect 56 0 47 0;
+#X connect 57 0 58 0;
+#X connect 58 0 59 0;
+#X connect 59 0 29 0;
+#X connect 60 0 61 0;
+#X connect 61 0 29 0;
+#X connect 62 0 63 0;
+#X connect 63 0 29 0;

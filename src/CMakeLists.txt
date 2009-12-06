@@ -26,5 +26,5 @@ ELSEIF(APPLE)
 ELSE(UNIX)
 ENDIF(UNIX)
 
-add_executable(resoundnv-server core.cpp jackengine.cpp oscmanager.cpp)
+add_executable(resoundnv-server core.cpp jackengine.cpp oscmanager.cpp dsp.cpp)
 target_link_libraries(resoundnv-server ${LIBS})
