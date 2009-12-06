@@ -25,6 +25,8 @@
 
 #include <boost/program_options.hpp>
 
+#include "resoundnv/dsp.hpp"
+
 AudioBuffer::AudioBuffer() : buffer_(0) {
 }
 AudioBuffer::~AudioBuffer(){
@@ -664,6 +666,7 @@ void parse_command_arguments(int argc, char** argv){
 		("help", "Display this help message.")
 		("input", po::value<std::string>(&g_options.inputXML_)->default_value(""), "Input resound xml file, must be set!")
 		("port", po::value<std::string>(&g_options.oscPort_)->default_value("8000"), "OSC listening port")
+		("test", "Runs some internal testing code")
 		//("record", po::value<std::string>(), "Record loudspeakers to wav file <filename>.")
 		//("simulate", po::value<int>(), "Loudspeakers are simulated as point sources")
 
@@ -675,6 +678,11 @@ void parse_command_arguments(int argc, char** argv){
 
 	if (vm.count("help")) {
 		std::cout << desc << "\n";
+		exit(1);
+	}
+
+	if (vm.count("test")) {
+		test_dsp();
 		exit(1);
 	}
 

@@ -42,6 +42,10 @@ public:
 		float r = values_[(int)i+1];
 		return (r-l)*f + l;
 	}
+
+	/// testing print code
+	void print();
+
 	static LookupTable* create_empty(size_t size){
 		LookupTable* t = new LookupTable(size);
 		std::memset(t->values_,0,sizeof(float)*(size+1));
@@ -53,7 +57,7 @@ public:
 		for(size_t n=0; n<size; ++n){
 			t->values_[n] = std::sin(TWOPI * n * rSize);
 		}
-		t->values_[size+1] = t->values_[size]; // guard
+		t->values_[size] = t->values_[size-1]; // guard
 		return t;
 	}
 	static LookupTable* create_cosine(size_t size){
@@ -62,16 +66,16 @@ public:
 		for(size_t  n=0; n<size; ++n){
 			t->values_[n] = std::cos(TWOPI * n * rSize);
 		}
-		t->values_[size+1] = t->values_[size]; // guard
+		t->values_[size] = t->values_[size-1]; // guard
 		return t;
 	}
 	static LookupTable* create_hann(size_t size){
 		float rSize = 1.0f/(float)size;
 		LookupTable* t = new LookupTable(size);
 		for(size_t n=0; n<size; ++n){
-			t->values_[n] = 0.5f + (1.0f - std::cos(TWOPI * n / (rSize-1)));
+			t->values_[n] = 0.5f * (1.0f - std::cos(TWOPI * n / (rSize-1)));
 		}
-		t->values_[size+1] = t->values_[size]; // guard
+		t->values_[size] = t->values_[size-1]; // guard
 		return t;
 	}
 };
@@ -79,16 +83,17 @@ public:
 class Phasor{
 private:
 	float SR_; // sample rate
-	float phase_; // current value and therefore phase between 0 and 1
 	float step_; // step per sample calculated when setting frequency
 	float freq_; // the last frequency set
-	
+	float phase_; // current value and therefore phase between 0 and 1
 public:
-	Phasor(float SR, float phase, float freq) : SR_(SR), phase_(phase) { set_freq(freq_); }
+	Phasor(float SR,  float freq, float phase=0.0f) : SR_(SR), phase_(phase) { set_freq(freq); }
+	float get_step() { return step_; }
+	float get_freq() { return freq_; }
 	float get_phase() { return phase_; }
 	void tick(){ 
 		phase_ += step_; 
-		if(phase_>1.0f){phase_ -= 1.0f; return;}
+		if(phase_>=1.0f){phase_ -= 1.0f; return;}
 		if(phase_<0.0f){phase_ += 1.0f;}
 	}
 	void set_freq(float freq){
@@ -98,3 +103,9 @@ public:
 	}
 };
 
+/// a function to perform wrap around on a floating point value
+/// wraps the input - very useful with phasors
+inline float wrap(float op){return std::fmod(op,1.0f);}
+
+/// some testing code
+void test_dsp();
