@@ -107,5 +107,12 @@ public:
 /// wraps the input - very useful with phasors
 inline float wrap(float op){return std::fmod(op,1.0f);}
 
+// make a signal zero if it is less than a low bound or greater than an upper bound
+// again this useful with phasors
+inline float zero_outside_bounds(float v, float lower, float upper){
+	if(v < lower) return 0.0f;
+	if(v > upper) return 0.0f;
+}
+
 /// some testing code
 void test_dsp();

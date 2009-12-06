@@ -25,6 +25,8 @@ void LookupTable::print(){
 	}
 }
 
+
+
 void test_dsp(){
 	const int S = 20;
 	std::cout << "Hann table\n";
