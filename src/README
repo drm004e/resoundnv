@@ -15,5 +15,5 @@ You must set pd to use Jack with 8 inputs and outputs and enable dsp before load
 
 run resoundnv as follows:
 
-./resoundnv-server test8.xml  
+./resoundnv-server --input test8.xml  
 
