@@ -61,6 +61,18 @@ void ab_sum_with_gain(const float* src, float* dest, size_t N, float gain){
 	}
 }
 
+void ab_sum_with_gain_linear_interp(const float* src, float* dest, size_t N, float gain, float oldGain, int interpSize){
+	assert(interpSize<=N);
+	float interpStep = 1.0/(float)interpSize;
+	for(size_t n=0; n < interpSize; ++n){
+		float v = interpStep *(float)n;
+		dest[n] += src[n] * (v*gain+(1-v)*oldGain);
+	}
+	for(size_t n=0; n < N - interpSize; ++n){
+		dest[n] += src[n] * gain;
+	}
+}
+
 void avg_signal_in_buffer(const float* src, size_t N){
 	float peak = 0.0f;
 	float sum = 0.0f;
@@ -479,9 +491,9 @@ void AttBehaviour::process(jack_nframes_t nframes){
 	// then we do buffer copy for each one applying our current gain setting
 	float level = get_parameter_value("level");
 	// only interested in the first routeset
-	const BRouteSetArray& routeSets = get_route_sets();
+	BRouteSetArray& routeSets = get_route_sets();
 	if(routeSets.size() > 0){
-		const BRouteArray& routes = routeSets[0]->get_routes();
+		BRouteArray& routes = routeSets[0]->get_routes();
 		for(unsigned int n = 0; n < routes.size(); ++n){
 			AudioBuffer* from = routes[n].get_from();
 			
@@ -513,12 +525,13 @@ MultipointCrossfadeBehaviour::MultipointCrossfadeBehaviour(const xmlpp::Node* no
 	slope_= get_parameter_value("slope");
 
 	hannFunction = LookupTable::create_hann(HANN_TABLE_SIZE);
+
 }
 void MultipointCrossfadeBehaviour::process(jack_nframes_t nframes){
 
 	
 	
-	const BRouteSetArray& routeSets = get_route_sets();
+	BRouteSetArray& routeSets = get_route_sets();
 	int numRoutes = routeSets.size();
 	float N = (float)numRoutes;
 	slope_= clip(get_parameter_value("slope"),1,1000); // TODO this would be better with a clip_lower_bound function
@@ -535,14 +548,22 @@ void MultipointCrossfadeBehaviour::process(jack_nframes_t nframes){
 			float i = zero_outside_bounds( position_ - offsetFactor * (float)setNum, 0.0f, 1.0f);
 			float routeSetGain = hannFunction->lookup_linear(i * (float)HANN_TABLE_SIZE ) * gain_;
 
-			const BRouteArray& routes = routeSets[setNum]->get_routes();
+			BRouteArray& routes = routeSets[setNum]->get_routes();
 			
 			// dsp for each route
 			for(unsigned int n = 0; n < routes.size(); ++n){
+				// old gain data is stored in the userData
+				float* oldGain = (float*)routes[n].get_user_data();
+				if(!oldGain) {
+					oldGain	= new float(0.0f);		
+					routes[n].set_user_data(oldGain);
+				}
 				AudioBuffer* from = routes[n].get_from();
 				AudioBuffer* to = routes[n].get_to();
-				float gain = routes[n].get_gain();
-				ab_sum_with_gain(from->get_buffer(), to->get_buffer(), nframes, gain * routeSetGain);
+				float gain = routes[n].get_gain() * routeSetGain;
+				
+				ab_sum_with_gain_linear_interp(from->get_buffer(), to->get_buffer(), nframes, gain, *oldGain, 128);
+				*oldGain = gain;
 			}
 		}
 	}

@@ -87,14 +87,17 @@ class BRoute{
 	AudioBuffer* fromBuffer_;
 	AudioBuffer* toBuffer_;
 	float gain_;
+	void* userData_; ///< allow the behaviour to store some aribitrary info
 public:
-	BRoute() : fromBuffer_(0), toBuffer_(0), gain_(1.0f) {}
+	BRoute() : fromBuffer_(0), toBuffer_(0), gain_(1.0f), userData_(0) {}
 	BRoute(AudioBuffer* fromBuffer, AudioBuffer* toBuffer, float gain) :
-			fromBuffer_(fromBuffer), toBuffer_(toBuffer) , gain_(gain) 
+			fromBuffer_(fromBuffer), toBuffer_(toBuffer) , gain_(gain), userData_(0)
 			{}
 	AudioBuffer* get_from() const {return fromBuffer_;}
 	AudioBuffer* get_to() const {return toBuffer_;}
 	float get_gain() const {return gain_; }
+	void* get_user_data() const { return userData_; } 
+	void set_user_data(void* userData) { userData_=userData; }
 };
 
 typedef std::vector<BRoute> BRouteArray; // sequential array of routes
@@ -106,7 +109,7 @@ private:
 	BRouteArray routes_;
 public:
 	BRouteSet(const xmlpp::Node* node, ResoundSession* session);
-	const BRouteArray& get_routes() const {return routes_; }
+	BRouteArray& get_routes() {return routes_; }
 };
 
 // parameters for behaviours
@@ -154,7 +157,7 @@ private:
 public:
 	RouteSetBehaviour(const xmlpp::Node* node, ResoundSession* session);
 	virtual void process(jack_nframes_t nframes) = 0;
-	const BRouteSetArray& get_route_sets() const {return routeSets_;}
+	BRouteSetArray& get_route_sets() {return routeSets_;}
 };
 
 /// an IOBehaviour does not use the routeset interpretation and instead suggests inputs and outputs
@@ -192,6 +195,7 @@ class MultipointCrossfadeBehaviour : public RouteSetBehaviour {
 	float position_, gain_, slope_;
 	LookupTable* hannFunction;
 	static const size_t HANN_TABLE_SIZE=512;
+	float *oldGains_; ///< used for interpolation algorithm
 public:
 
 	MultipointCrossfadeBehaviour(const xmlpp::Node* node, ResoundSession* session);

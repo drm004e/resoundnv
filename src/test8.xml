@@ -38,6 +38,8 @@
 		<alias id="RR" ref="pd2"/>
 	</cass>
 
+
+
 	<loudspeaker id="G1" type="Genelec1029" x="-2" y="1" z="2" as="" el="" port="pure_data_0:input0"/>
 	<loudspeaker id="G2" type="Genelec1029" x="2" y="1" z="2" as="" el="" port="pure_data_0:input1"/>
 	<loudspeaker id="G3" type="Genelec1029" x="-2" y="1" z="1" as="" el="" port="pure_data_0:input2"/>
@@ -81,6 +83,8 @@
 		<alias id="RL" ref="G7"/>
 		<alias id="RR" ref="G8"/>
 	</cls>
+
+
 <!--
 	<behaviour class="att" id="source_to_mains">
 		<routeset>
@@ -132,9 +136,17 @@
 
 	<behaviour class="mpc" id="multipoint_front_to_rear">
 		<routeset><route from="source1" to="mains" gain = "1"/></routeset>
-		<routeset><route from="source1" to="wides" gain = "1"/></routeset>
+		<routeset><route from="source1" to="wides" gain = "0.5"/></routeset>
 		<routeset><route from="source1" to="sides" gain = "1"/></routeset>
-		<routeset><route from="source1" to="rears" gain = "1"/></routeset>
+		<routeset><route from="source1" to="rears" gain = "0.1"/></routeset>
+		<routeset><route from="source1.L" to="G1" gain = "1"/></routeset>
+		<routeset><route from="source1.L" to="G2" gain = "1"/></routeset>
+		<routeset><route from="source1.L" to="G4" gain = "1"/></routeset>
+		<routeset><route from="source1.L" to="G6" gain = "1"/></routeset>
+		<routeset><route from="source1.L" to="G8" gain = "1"/></routeset>
+		<routeset><route from="source1.L" to="G7" gain = "1"/></routeset>
+		<routeset><route from="source1.L" to="G5" gain = "1"/></routeset>
+		<routeset><route from="source1.L" to="G3" gain = "1"/></routeset>
 		<param id="position" address="/fader4" value="0.0"/>
 		<param id="gain" address="/fader5" value="1.0"/>
 		<param id="slope" address="/fader6" value="3"/>
