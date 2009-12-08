@@ -70,30 +70,92 @@
 	<loudspeaker id="G22" type="Genelec1029" x="2" y="1" z="0" as="" el="" port="pure_data_0:input21"/>
 	<loudspeaker id="G23" type="Genelec1029" x="-2" y="1" z="-1" as="" el="" port="pure_data_0:input22"/>
 	<loudspeaker id="G24" type="Genelec1030" x="2" y="1" z="-1" as="" el="" port="pure_data_0:input23"/>
-	<cls id="mains">
+
+	<cls id="mains1">
 		<alias id="L" ref="G1"/>
 		<alias id="R" ref="G2"/>
 	</cls>
-	<cls id="wides">
+	<cls id="wides1">
 		<alias id="L" ref="G3"/>
 		<alias id="R" ref="G4"/>
 	</cls>
-	<cls id="sides">
+	<cls id="sides1">
 		<alias id="L" ref="G5"/>
 		<alias id="R" ref="G6"/>
 	</cls>
-	<cls id="rears">
+	<cls id="rears1">
 		<alias id="L" ref="G7"/>
 		<alias id="R" ref="G8"/>
 	</cls>
-	<cls id="leftPair">	
-		<alias id="R" ref="G3"/>
-		<alias id="L" ref="G5"/>
+
+	<cls id="mains2">
+		<alias id="L" ref="G9"/>
+		<alias id="R" ref="G10"/>
 	</cls>
-	<cls id="rightPair">	
+	<cls id="wides2">
+		<alias id="L" ref="G11"/>
+		<alias id="R" ref="G12"/>
+	</cls>
+	<cls id="sides2">
+		<alias id="L" ref="G13"/>
+		<alias id="R" ref="G14"/>
+	</cls>
+	<cls id="rears2">
+		<alias id="L" ref="G15"/>
+		<alias id="R" ref="G16"/>
+	</cls>
+
+	<cls id="mains3">
+		<alias id="L" ref="G17"/>
+		<alias id="R" ref="G18"/>
+	</cls>
+	<cls id="wides3">
+		<alias id="L" ref="G19"/>
+		<alias id="R" ref="G20"/>
+	</cls>
+	<cls id="sides3">
+		<alias id="L" ref="G21"/>
+		<alias id="R" ref="G22"/>
+	</cls>
+	<cls id="rears3">
+		<alias id="L" ref="G23"/>
+		<alias id="R" ref="G24"/>
+	</cls>
+
+
+	<cls id="r1">
+		<alias id="L" ref="G1"/>
+		<alias id="R" ref="G8"/>
+	</cls>
+	<cls id="r2">
+		<alias id="L" ref="G2"/>
+		<alias id="R" ref="G7"/>
+	</cls>
+	<cls id="r3">
 		<alias id="L" ref="G4"/>
+		<alias id="R" ref="G5"/>
+	</cls>
+	<cls id="r4">
+		<alias id="L" ref="G6"/>
+		<alias id="R" ref="G3"/>
+	</cls>
+	<cls id="r5">
+		<alias id="L" ref="G8"/>
+		<alias id="R" ref="G1"/>
+	</cls>
+	<cls id="r6">
+		<alias id="L" ref="G7"/>
+		<alias id="R" ref="G2"/>
+	</cls>
+	<cls id="r7">
+		<alias id="L" ref="G5"/>
+		<alias id="R" ref="G4"/>
+	</cls>
+	<cls id="r8">
+		<alias id="L" ref="G3"/>
 		<alias id="R" ref="G6"/>
 	</cls>
+
 	<cls id="8rig1">	
 		<alias id="L" ref="G1"/>
 		<alias id="R" ref="G2"/>
@@ -125,34 +187,53 @@
 		<alias id="RR" ref="G24"/>
 	</cls>
 
-
-
-	<behaviour class="att" id="source_to_mains">
-		<routeset>
-			<route from="source1" to="mains" gain = "1"/>
-			<route from="source1" to="rears" gain = "0.5"/>
-		</routeset>
-		<param id="level" address="/fader1"/>
-	</behaviour>
-
-
-<!--
-	<behaviour class="mpc" id="multipoint_front_to_rear">
-		<routeset><route from="mono8" to="8rig1" gain = "1"/></routeset>
-		<routeset><route from="mono8" to="8rig2" gain = "1"/></routeset>
-		<param id="position" address="/fader4" value="0.0"/>
-		<param id="gain" address="/fader5" value="1.0"/>
-		<param id="slope" address="/fader6" value="3"/>
-	</behaviour>
--->
-	<behaviour class="chase" id="chase_front_to_rear">
+	<behaviour class="chase" id="chase_rig_to_rig">
 		<routeset><route from="mono8" to="8rig1" gain = "1"/></routeset>
 		<routeset><route from="mono8" to="8rig2" gain = "1"/></routeset>
 		<routeset><route from="mono8" to="8rig3" gain = "1"/></routeset>
-		<param id="freq" address="/fader4" value="1"/>
+		<param id="freq" address="/fader4" value="0.1"/>
 		<param id="phase" address="/fader7" value="0.0"/>
 		<param id="gain" address="/fader5" value="1.0"/>
 		<param id="slope" address="/fader6" value="3"/>
+	</behaviour>
+
+	<behaviour class="chase" id="source1_to_pairs">
+		<routeset><route from="source1" to="mains1" gain = "1"/></routeset>
+		<routeset><route from="source1" to="wides1" gain = "1"/></routeset>
+		<routeset><route from="source1" to="sides1" gain = "1"/></routeset>
+		<routeset><route from="source1" to="rears1" gain = "1"/></routeset>
+
+		<routeset><route from="source1" to="mains2" gain = "1"/></routeset>
+		<routeset><route from="source1" to="wides2" gain = "1"/></routeset>
+		<routeset><route from="source1" to="sides2" gain = "1"/></routeset>
+		<routeset><route from="source1" to="rears2" gain = "1"/></routeset>
+
+		<routeset><route from="source1" to="mains3" gain = "1"/></routeset>
+		<routeset><route from="source1" to="wides3" gain = "1"/></routeset>
+		<routeset><route from="source1" to="sides3" gain = "1"/></routeset>
+		<routeset><route from="source1" to="rears3" gain = "1"/></routeset>
+
+		<param id="freq" address="/fader4" value="0.2"/>
+		<param id="phase" address="/fader7" value="0.0"/>
+		<param id="gain" address="/fader5" value="1.0"/>
+		<param id="slope" address="/fader6" value="12"/>
+	</behaviour>
+
+	<behaviour class="chase" id="rotate_pairs">
+		<routeset><route from="source1" to="r1" gain = "1"/></routeset>
+		<routeset><route from="source1" to="r2" gain = "1"/></routeset>
+		<routeset><route from="source1" to="r3" gain = "1"/></routeset>
+		<routeset><route from="source1" to="r4" gain = "1"/></routeset>
+
+		<routeset><route from="source1" to="r5" gain = "1"/></routeset>
+		<routeset><route from="source1" to="r6" gain = "1"/></routeset>
+		<routeset><route from="source1" to="r7" gain = "1"/></routeset>
+		<routeset><route from="source1" to="r8" gain = "1"/></routeset>
+
+		<param id="freq" address="/fader4" value="0.4"/>
+		<param id="phase" address="/fader7" value="0.0"/>
+		<param id="gain" address="/fader5" value="1.0"/>
+		<param id="slope" address="/fader6" value="4"/>
 	</behaviour>
 
 </resoundnv>
