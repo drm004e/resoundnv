@@ -101,6 +101,9 @@ public:
 		freq_ = freq;
 		step_ = freq_/SR_;
 	}
+	void set_phase(float phase){
+		phase_ = phase;
+	}
 };
 
 /// a function to perform wrap around on a floating point value

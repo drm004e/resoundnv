@@ -569,6 +569,68 @@ void MultipointCrossfadeBehaviour::process(jack_nframes_t nframes){
 	}
 
 }
+ChaseBehaviour::ChaseBehaviour(const xmlpp::Node* node, ResoundSession* session) 
+		: RouteSetBehaviour(node,session),
+		  phasor(44100.0f/128.0f,1){	
+	std::cout << "Created ChaseBehaviour routeset behaviour object!" << std::endl;
+	// this is based on the multipoint crossfader but uses a phasor to control position
+	hannFunction = LookupTable::create_hann(HANN_TABLE_SIZE);
+
+	freq_ = get_parameter_value("freq");
+	phase_ = get_parameter_value("phase");
+	gain_= get_parameter_value("gain");
+	slope_= get_parameter_value("slope");
+	
+	
+	phasor.set_phase(phase_);
+}
+void ChaseBehaviour::process(jack_nframes_t nframes){
+
+	BRouteSetArray& routeSets = get_route_sets();
+	int numRoutes = routeSets.size();
+	float N = (float)numRoutes;
+	slope_= clip(get_parameter_value("slope"),1,1000); // TODO this would be better with a clip_lower_bound function
+
+	// TODO this is ineficient and should really use a messaging callback system
+	freq_ = clip(get_parameter_value("freq"),-50,50);
+	phasor.set_freq(freq_);
+
+	// the chase gets its position from the phasor
+	float p = clip(phasor.get_phase(),0,1) * slope_;
+	phasor.tick();
+
+	gain_= get_parameter_value("gain");
+
+	float f = slope_;
+	// offset factor (1-1/f)/(N-1)*f
+	float offsetFactor = (1.0f - 1.0f/f)/(N-1.0f)*f;
+	
+	if(numRoutes > 0){
+		for(int setNum = 0; setNum < numRoutes; ++setNum){
+			float i = zero_outside_bounds( p - offsetFactor * (float)setNum, 0.0f, 1.0f);
+			float routeSetGain = hannFunction->lookup_linear(i * (float)HANN_TABLE_SIZE ) * gain_;
+
+			BRouteArray& routes = routeSets[setNum]->get_routes();
+			
+			// dsp for each route
+			for(unsigned int n = 0; n < routes.size(); ++n){
+				// old gain data is stored in the userData
+				float* oldGain = (float*)routes[n].get_user_data();
+				if(!oldGain) {
+					oldGain	= new float(0.0f);		
+					routes[n].set_user_data(oldGain);
+				}
+				AudioBuffer* from = routes[n].get_from();
+				AudioBuffer* to = routes[n].get_to();
+				float gain = routes[n].get_gain() * routeSetGain;
+				
+				ab_sum_with_gain_linear_interp(from->get_buffer(), to->get_buffer(), nframes, gain, *oldGain, 128);
+				*oldGain = gain;
+			}
+		}
+	}
+
+}
 
 ResoundSession::ResoundSession(CLIOptions options) : 
 		Resound::OSCManager(options.oscPort_.c_str()),
@@ -577,6 +639,7 @@ ResoundSession::ResoundSession(CLIOptions options) :
 
 	register_behaviour_factory("att", AttBehaviour::factory);
 	register_behaviour_factory("mpc", MultipointCrossfadeBehaviour::factory);
+	register_behaviour_factory("chase", ChaseBehaviour::factory);
 
 	register_behaviour_factory("minimal", MinimalRouteSetBehaviour::factory);
 	register_behaviour_factory("iobehaviour", MinimalIOBehaviour::factory); // for now
