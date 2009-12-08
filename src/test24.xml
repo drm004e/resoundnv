@@ -1,0 +1,158 @@
+<resoundnv>
+	<!--
+//    Resound
+//    Copyright 2009 David Moore and James Mooney
+//
+//    This file is part of Resound.
+//
+//    Resound is free software; you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation; either version 2 of the License, or
+//    (at your option) any later version.
+//
+//    Resound is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+//
+//    You should have received a copy of the GNU General Public License
+//    along with Resound; if not, write to the Free Software
+//    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+		A simple stereo live feed to eight speakers test with test8.pd 
+	-->
+	<livestream id="pd1" port="pure_data_0:output0" gain="0.5"/>
+	<livestream id="pd2" port="pure_data_0:output1" gain="1"/>
+	<cass id="source1">
+		<alias id="L" ref="pd1"/>
+		<alias id="R" ref="pd2"/>
+	</cass>
+	<cass id="source2">
+		<alias id="R" ref="pd1"/>
+		<alias id="L" ref="pd2"/>
+	</cass>
+
+	<cass id="mono8">
+		<alias id="L" ref="pd1"/>
+		<alias id="R" ref="pd2"/>
+		<alias id="WL" ref="pd1"/>
+		<alias id="WR" ref="pd2"/>
+		<alias id="SL" ref="pd1"/>
+		<alias id="SR" ref="pd2"/>
+		<alias id="RL" ref="pd1"/>
+		<alias id="RR" ref="pd2"/>
+	</cass>
+
+
+
+	<loudspeaker id="G1" type="Genelec1029" x="-2" y="1" z="2" as="" el="" port="pure_data_0:input0"/>
+	<loudspeaker id="G2" type="Genelec1029" x="2" y="1" z="2" as="" el="" port="pure_data_0:input1"/>
+	<loudspeaker id="G3" type="Genelec1029" x="-2" y="1" z="1" as="" el="" port="pure_data_0:input2"/>
+	<loudspeaker id="G4" type="Genelec1030" x="2" y="1" z="1" as="" el="" port="pure_data_0:input3"/>
+	<loudspeaker id="G5" type="Genelec1029" x="-2" y="1" z="0" as="" el="" port="pure_data_0:input4"/>
+	<loudspeaker id="G6" type="Genelec1029" x="2" y="1" z="0" as="" el="" port="pure_data_0:input5"/>
+	<loudspeaker id="G7" type="Genelec1029" x="-2" y="1" z="-1" as="" el="" port="pure_data_0:input6"/>
+	<loudspeaker id="G8" type="Genelec1030" x="2" y="1" z="-1" as="" el="" port="pure_data_0:input7"/>
+
+	<loudspeaker id="G9" type="Genelec1029" x="-2" y="1" z="2" as="" el="" port="pure_data_0:input8"/>
+	<loudspeaker id="G10" type="Genelec1029" x="2" y="1" z="2" as="" el="" port="pure_data_0:input9"/>
+	<loudspeaker id="G11" type="Genelec1029" x="-2" y="1" z="1" as="" el="" port="pure_data_0:input10"/>
+	<loudspeaker id="G12" type="Genelec1030" x="2" y="1" z="1" as="" el="" port="pure_data_0:input11"/>
+	<loudspeaker id="G13" type="Genelec1029" x="-2" y="1" z="0" as="" el="" port="pure_data_0:input12"/>
+	<loudspeaker id="G14" type="Genelec1029" x="2" y="1" z="0" as="" el="" port="pure_data_0:input13"/>
+	<loudspeaker id="G15" type="Genelec1029" x="-2" y="1" z="-1" as="" el="" port="pure_data_0:input14"/>
+	<loudspeaker id="G16" type="Genelec1030" x="2" y="1" z="-1" as="" el="" port="pure_data_0:input15"/>
+
+	<loudspeaker id="G17" type="Genelec1029" x="-2" y="1" z="2" as="" el="" port="pure_data_0:input16"/>
+	<loudspeaker id="G18" type="Genelec1029" x="2" y="1" z="2" as="" el="" port="pure_data_0:input17"/>
+	<loudspeaker id="G19" type="Genelec1029" x="-2" y="1" z="1" as="" el="" port="pure_data_0:input18"/>
+	<loudspeaker id="G20" type="Genelec1030" x="2" y="1" z="1" as="" el="" port="pure_data_0:input19"/>
+	<loudspeaker id="G21" type="Genelec1029" x="-2" y="1" z="0" as="" el="" port="pure_data_0:input20"/>
+	<loudspeaker id="G22" type="Genelec1029" x="2" y="1" z="0" as="" el="" port="pure_data_0:input21"/>
+	<loudspeaker id="G23" type="Genelec1029" x="-2" y="1" z="-1" as="" el="" port="pure_data_0:input22"/>
+	<loudspeaker id="G24" type="Genelec1030" x="2" y="1" z="-1" as="" el="" port="pure_data_0:input23"/>
+	<cls id="mains">
+		<alias id="L" ref="G1"/>
+		<alias id="R" ref="G2"/>
+	</cls>
+	<cls id="wides">
+		<alias id="L" ref="G3"/>
+		<alias id="R" ref="G4"/>
+	</cls>
+	<cls id="sides">
+		<alias id="L" ref="G5"/>
+		<alias id="R" ref="G6"/>
+	</cls>
+	<cls id="rears">
+		<alias id="L" ref="G7"/>
+		<alias id="R" ref="G8"/>
+	</cls>
+	<cls id="leftPair">	
+		<alias id="R" ref="G3"/>
+		<alias id="L" ref="G5"/>
+	</cls>
+	<cls id="rightPair">	
+		<alias id="L" ref="G4"/>
+		<alias id="R" ref="G6"/>
+	</cls>
+	<cls id="8rig1">	
+		<alias id="L" ref="G1"/>
+		<alias id="R" ref="G2"/>
+		<alias id="WL" ref="G3"/>
+		<alias id="WR" ref="G4"/>
+		<alias id="SL" ref="G5"/>
+		<alias id="SR" ref="G6"/>
+		<alias id="RL" ref="G7"/>
+		<alias id="RR" ref="G8"/>
+	</cls>
+	<cls id="8rig2">	
+		<alias id="L" ref="G9"/>
+		<alias id="R" ref="G10"/>
+		<alias id="WL" ref="G11"/>
+		<alias id="WR" ref="G12"/>
+		<alias id="SL" ref="G13"/>
+		<alias id="SR" ref="G14"/>
+		<alias id="RL" ref="G15"/>
+		<alias id="RR" ref="G16"/>
+	</cls>
+	<cls id="8rig3">	
+		<alias id="L" ref="G17"/>
+		<alias id="R" ref="G18"/>
+		<alias id="WL" ref="G19"/>
+		<alias id="WR" ref="G20"/>
+		<alias id="SL" ref="G21"/>
+		<alias id="SR" ref="G22"/>
+		<alias id="RL" ref="G23"/>
+		<alias id="RR" ref="G24"/>
+	</cls>
+
+
+
+	<behaviour class="att" id="source_to_mains">
+		<routeset>
+			<route from="source1" to="mains" gain = "1"/>
+			<route from="source1" to="rears" gain = "0.5"/>
+		</routeset>
+		<param id="level" address="/fader1"/>
+	</behaviour>
+
+
+<!--
+	<behaviour class="mpc" id="multipoint_front_to_rear">
+		<routeset><route from="mono8" to="8rig1" gain = "1"/></routeset>
+		<routeset><route from="mono8" to="8rig2" gain = "1"/></routeset>
+		<param id="position" address="/fader4" value="0.0"/>
+		<param id="gain" address="/fader5" value="1.0"/>
+		<param id="slope" address="/fader6" value="3"/>
+	</behaviour>
+-->
+	<behaviour class="chase" id="chase_front_to_rear">
+		<routeset><route from="mono8" to="8rig1" gain = "1"/></routeset>
+		<routeset><route from="mono8" to="8rig2" gain = "1"/></routeset>
+		<routeset><route from="mono8" to="8rig3" gain = "1"/></routeset>
+		<param id="freq" address="/fader4" value="1"/>
+		<param id="phase" address="/fader7" value="0.0"/>
+		<param id="gain" address="/fader5" value="1.0"/>
+		<param id="slope" address="/fader6" value="3"/>
+	</behaviour>
+
+</resoundnv>
