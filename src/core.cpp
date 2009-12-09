@@ -68,7 +68,8 @@ void ab_sum_with_gain_linear_interp(const float* src, float* dest, size_t N, flo
 		float v = interpStep *(float)n;
 		dest[n] += src[n] * (v*gain+(1-v)*oldGain);
 	}
-	for(size_t n=0; n < N - interpSize; ++n){
+
+	for(size_t n=interpSize; n < N; ++n){
 		dest[n] += src[n] * gain;
 	}
 }
