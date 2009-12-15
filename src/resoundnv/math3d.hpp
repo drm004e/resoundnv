@@ -9,8 +9,8 @@ struct Vec3 {
 };
 
 // vector ops
-inline Vec3 operator + (const Vec3& l, const Vec3& r){ return Vec3( l.x+r.x , l.y+l.y, l.z+l.z); }
-inline Vec3 operator - (const Vec3& l, const Vec3& r){ return Vec3( l.x-r.x , l.y-l.y, l.z-l.z); }
+inline Vec3 operator + (const Vec3& l, const Vec3& r){ return Vec3( l.x+r.x , l.y+r.y, l.z+r.z); }
+inline Vec3 operator - (const Vec3& l, const Vec3& r){ return Vec3( l.x-r.x , l.y-r.y, l.z-r.z); }
 
 // vector scalar ops
 inline Vec3 operator + (const Vec3& l, float r){ return Vec3( l.x+r , l.y+r, l.z+r); }

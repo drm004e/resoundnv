@@ -274,7 +274,7 @@ BRouteSet::BRouteSet(const xmlpp::Node* node, ResoundSession* session){
 				// determine one of four input to output situations:
 				// 1) single to single, simple, create a direct path
 				// 2) set to single, every alias of the set is connected to the single
-				// 3) single to set, the single is connected to every alias of the set
+				// 3) single to set,oldGains_[o] the single is connected to every alias of the set
 				// 4) set to set, connect matching alias names like for like
 				// 5).... further rules may be added possibly with regex matching
 				
@@ -655,6 +655,11 @@ AmpPanBehaviour::AmpPanBehaviour(const xmlpp::Node* node, ResoundSession* sessio
 }
 
 void AmpPanBehaviour::process(jack_nframes_t nframes){
+	pos_.x = get_parameter_value("x");
+	pos_.y = get_parameter_value("y");
+	pos_.z = get_parameter_value("z");
+	gain_ = get_parameter_value("gain");
+
 	AudioStreamArray& inputs = get_inputs();
 	float* in = inputs[0]->get_buffer()->get_buffer(); // ignore all others for now
 	LoudspeakerArray& outputs = get_outputs();
@@ -666,6 +671,7 @@ void AmpPanBehaviour::process(jack_nframes_t nframes){
 		float gCoef = 1.0f/(D*D) * gain_;
 		// sum to buffer
 		ab_sum_with_gain_linear_interp(in, outputs[o]->get_buffer()->get_buffer(), nframes, gCoef, oldGains_[o], 128);
+		oldGains_[o] = gCoef;
 	}
 }
 
