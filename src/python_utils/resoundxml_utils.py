@@ -2,14 +2,12 @@
 # Copyright 2009 Dave Moore and James Mooney
 
 import math
-def circle_array(id, N, r, y):
+def circle_array(id, N, r, y, port, inOffset=1, outOffset=1):
 	pi = 3.14159
 	for n in range(0,N):
 		a = n*(2.0*pi/N)
 		x = math.sin(a) * r
 		z = math.cos(a) * r
-		print "<loudspeaker id=\"{id}-{n}\" type=\"Genelec 1029\"x=\"{x}\" y=\"{y}\" z=\"{z}\" port=\"playback_{n}\"/>".format(id=id,n=n+1,x=x,y=y,z=z)
+		print "<loudspeaker id=\"{id}{inp}\" type=\"Genelec 1029\" port=\"{portPrefix}{outp}\" x=\"{x}\" y=\"{y}\" z=\"{z}\"/>".format(id=id, inp=n+inOffset, outp=n+outOffset,x=x,y=y,z=z, portPrefix=port)
 
-circle_array("circle1",20,2,0.1)
-circle_array("circle2",8,1,1)
-circle_array("circle3",15,2,3)
+circle_array("G",8,3,0, 'pure_data_0:input',1,0)

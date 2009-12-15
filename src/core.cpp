@@ -468,7 +468,7 @@ RouteSetBehaviour::RouteSetBehaviour(const xmlpp::Node* node, ResoundSession* se
 }
 
 IOBehaviour::IOBehaviour(const xmlpp::Node* node, ResoundSession* session) : Behaviour(node,session) {
-	// TODO this is incomplete
+	// TODO Although basic inputs and outputs are created this does not consider cass or cls as groups
 	// This class of behaviour uses the i/o interpretation for CASS and CLS
 	const xmlpp::Element* nodeElement = get_element(node);
 	xmlpp::Node::NodeList nodes;
