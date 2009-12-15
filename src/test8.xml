@@ -152,7 +152,7 @@
 		<param id="gain" address="/fader5" value="1.0"/>
 		<param id="slope" address="/fader6" value="3"/>
 	</behaviour>
--->
+
 	<behaviour class="chase" id="chase_front_to_rear">
 		<routeset><route from="source1" to="mains" gain = "1"/></routeset>
 		<routeset><route from="source1" to="wides" gain = "0.5"/></routeset>
@@ -171,5 +171,22 @@
 		<param id="gain" address="/fader5" value="1.0"/>
 		<param id="slope" address="/fader6" value="3"/>
 	</behaviour>
+-->
 
+	<behaviour class="amppan" id="monopanto8">
+		<input ref="source1.L" />
+		<output ref="G1" />
+		<output ref="G2" />
+		<output ref="G3" />
+		<output ref="G4" />
+		<output ref="G5" />
+		<output ref="G6" />
+		<output ref="G7" />
+		<output ref="G8" />
+
+		<param id="x" address="/x" value="0"/>
+		<param id="y" address="/y" value="0"/>
+		<param id="z" address="/z" value="0"/>
+		<param id="gain" address="/gain" value="1"/>
+	</behaviour>
 </resoundnv>

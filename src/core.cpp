@@ -171,9 +171,9 @@ Loudspeaker::Loudspeaker(const xmlpp::Node* node, ResoundSession* session) : Dyn
 	port_->connect(connectionName_);
 
 	type_ = get_optional_attribute_string(nodeElement,"type");
-	x_ = get_optional_attribute_float(nodeElement,"x");
-	y_ = get_optional_attribute_float(nodeElement,"y");
-	z_ = get_optional_attribute_float(nodeElement,"z");
+	pos_.x = get_optional_attribute_float(nodeElement,"x");
+	pos_.y = get_optional_attribute_float(nodeElement,"y");
+	pos_.z = get_optional_attribute_float(nodeElement,"z");
 	az_ = get_optional_attribute_float(nodeElement,"az");
 	el_ = get_optional_attribute_float(nodeElement,"el");
 	
@@ -479,9 +479,13 @@ IOBehaviour::IOBehaviour(const xmlpp::Node* node, ResoundSession* session) : Beh
 		if(child){
 			std::string name = child->get_name();
 			if(name=="input"){
-				//BRouteSet* routeSet = new BRouteSet(child);
-				//routeSets_.push_back(routeSet);
+				ObjectId id = get_attribute_string(child,"ref");
+				AudioStream* stream = session->resolve_audiostream(id);
+				inputs_.push_back(stream);
 			} else if(name=="output"){
+				ObjectId id = get_attribute_string(child,"ref");
+				Loudspeaker* loudspeaker = session->resolve_loudspeaker(id);
+				outputs_.push_back(loudspeaker);
 			}
 		}	
 	}
@@ -633,6 +637,39 @@ void ChaseBehaviour::process(jack_nframes_t nframes){
 
 }
 
+AmpPanBehaviour::AmpPanBehaviour(const xmlpp::Node* node, ResoundSession* session) : IOBehaviour(node,session){	
+	std::cout << "Created AmpPan io based behaviour object!" << std::endl;
+	pos_.x = get_parameter_value("x");
+	pos_.y = get_parameter_value("y");
+	pos_.z = get_parameter_value("z");
+	gain_ = get_parameter_value("gain");
+
+	// identify the number off outputs and get each ones gain 
+	// setup storage for previous gain suitable for interpolation
+	LoudspeakerArray& outputs = get_outputs();
+	oldGains_ = new float[outputs.size()];
+	for(int n = 0; n < outputs.size(); ++n){	
+		oldGains_[n] = 0.0f;
+	}
+	assert(get_inputs().size() > 0);
+}
+
+void AmpPanBehaviour::process(jack_nframes_t nframes){
+	AudioStreamArray& inputs = get_inputs();
+	float* in = inputs[0]->get_buffer()->get_buffer(); // ignore all others for now
+	LoudspeakerArray& outputs = get_outputs();
+	for(int o = 0; o < outputs.size(); ++o){
+		Vec3 dPos = pos_ - outputs[o]->get_position();
+		float D = dPos.mag();
+		D = D < 1.0f ? 1.0f : D;
+		// now use D 
+		float gCoef = 1.0f/(D*D) * gain_;
+		// sum to buffer
+		ab_sum_with_gain_linear_interp(in, outputs[o]->get_buffer()->get_buffer(), nframes, gCoef, oldGains_[o], 128);
+	}
+}
+
+
 ResoundSession::ResoundSession(CLIOptions options) : 
 		Resound::OSCManager(options.oscPort_.c_str()),
 		options_(options) {
@@ -641,6 +678,7 @@ ResoundSession::ResoundSession(CLIOptions options) :
 	register_behaviour_factory("att", AttBehaviour::factory);
 	register_behaviour_factory("mpc", MultipointCrossfadeBehaviour::factory);
 	register_behaviour_factory("chase", ChaseBehaviour::factory);
+	register_behaviour_factory("amppan", AmpPanBehaviour::factory);
 
 	register_behaviour_factory("minimal", MinimalRouteSetBehaviour::factory);
 	register_behaviour_factory("iobehaviour", MinimalIOBehaviour::factory); // for now
@@ -753,6 +791,64 @@ DynamicObject* ResoundSession::get_dynamic_object(ObjectId id){
 		throw Exception((std::string("Dynamic object with name ") + id + std::string(" not found")).c_str());
 	}
 }
+
+AudioStream* ResoundSession::resolve_audiostream(ObjectId id){
+	// get the base objects they point to
+	DynamicObject* ob = get_dynamic_object(id);
+	//check for alias rules
+	bool isAlias = id.find('.') != std::string::npos;
+	// attempt to cast them to get the type we want
+	AudioStream* audioStream = 0;
+	CASS* cass = 0;
+	
+	audioStream = dynamic_cast<AudioStream*>(ob);
+	if(audioStream){
+		return audioStream;
+	} else {
+		cass = dynamic_cast<CASS*>(ob);
+		if(cass && isAlias){
+			ObjectId aliasId = id.substr(id.find('.')+1);
+			// resolve the alias to a stream and set
+			audioStream = dynamic_cast<AudioStream*>(
+							get_dynamic_object(cass->get_alias(aliasId)->get_ref())
+						);
+			if(audioStream) {
+				return audioStream;
+			}
+		}
+	}
+	throw Exception("Could not resolve to audio stream");
+}
+
+Loudspeaker* ResoundSession::resolve_loudspeaker(ObjectId id){
+	// get the base objects they point to
+	DynamicObject* ob = get_dynamic_object(id);
+	//check for alias rules
+	bool isAlias = id.find('.') != std::string::npos;
+	// attempt to cast them to get the type we want
+	Loudspeaker* loudspeaker = 0;
+	CLS* cls = 0;
+	
+	loudspeaker = dynamic_cast<Loudspeaker*>(ob);
+	if(loudspeaker){
+		return loudspeaker;
+	} else {
+		cls = dynamic_cast<CLS*>(ob);
+		if(cls && isAlias){
+			ObjectId aliasId = id.substr(id.find('.')+1);
+			// resolve the alias to a stream and set
+			loudspeaker = dynamic_cast<Loudspeaker*>(
+							get_dynamic_object(cls->get_alias(aliasId)->get_ref())
+						);
+			if(loudspeaker) {
+				return loudspeaker;
+			}
+		}
+	}
+	throw Exception("Could not resolve to loudspeaker");
+}
+
+
 
 void ResoundSession::build_dsp_object_lookups(){
 	
