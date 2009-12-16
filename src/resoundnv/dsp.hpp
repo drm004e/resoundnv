@@ -116,7 +116,7 @@ private:
 	float sumOfSquares_;
 	int count_;
 public:
-	VUMeter(int size=4096) : 
+	VUMeter(int size=4096) : //TODO the magic number here for buffer size implies a maximal jack buffer size of 4096
 		size_(size), 
 		rms_(0.0f), 
 		peak_(0.0f), 

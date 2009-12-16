@@ -63,6 +63,9 @@ public:
 	/// simply a wrapper over the liblo version
 	/// lo_server_thread_add_method(...);
 	void add_method(std::string path, std::string typeSpec, lo_method_handler handler, void* userData);
+
+	/// variable args method wrapper around liblos lo_send
+	void send_osc_to_all_clients(const char* addr, const char* format, ... );
 private:
 	// OSC
 	lo_server_thread m_loServerThread; ///< the liblo server thread

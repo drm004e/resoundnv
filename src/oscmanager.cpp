@@ -82,17 +82,16 @@ void Resound::OSCManager::recv_syn(const char *path, const char *types, lo_arg *
 			std::cout << "OSC new client detected at " << url << " on port " << argv[0]->i << "\n";
 		}
 		ActiveClient c;
-		c.timeToLive = 3;
+		c.timeToLive = 5;
 		c.url = url;
 		c.returnPort = argv[0]->i;
 		char portString[16];
 		sprintf(portString,"%i",c.returnPort);
 		c.returnAddress = lo_address_new( lo_address_get_hostname(lo_message_get_source(data)), portString);
-		m_clients[url] = c; // three strikes and your out!
+		m_clients[url] = c; // 5 strikes and your out!
 
 		// send back an ack
 		lo_send(c.returnAddress, "/ack", "s", "OSC returning ack");
- 		
 	}
 }
 
@@ -125,3 +124,21 @@ void Resound::OSCManager::update_clients(){
 void Resound::OSCManager::add_method(std::string path, std::string typeSpec, lo_method_handler handler, void* userData){
 	lo_server_thread_add_method(m_loServerThread, path.c_str(), typeSpec.c_str(), handler, userData);
 }
+
+void Resound::OSCManager::send_osc_to_all_clients(const char* addr, const char* format, ... )
+{
+	ActiveClientMap::iterator it;
+	for(it=m_clients.begin(); it != m_clients.end(); ++it){
+		va_list argptr;
+		va_start(argptr, format);
+		ActiveClient& c = it->second;
+		lo_message msg = lo_message_new();
+		lo_message_add_varargs(msg, format, argptr);
+    	lo_send_message(c.returnAddress, addr, msg);
+		lo_message_free(msg);
+		va_end(argptr);
+	}
+    
+}
+
+

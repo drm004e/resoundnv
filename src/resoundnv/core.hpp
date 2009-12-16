@@ -255,6 +255,7 @@ public:
 class AudioStream : public DynamicObject {
 	AudioBuffer buffer_;
 	float gain_;
+	VUMeter vuMeter_;
 public:
 
 	AudioStream(const xmlpp::Node* node, ResoundSession* session);
@@ -264,6 +265,7 @@ public:
 	// gain setting optional from xml
 	float get_gain(){return gain_;}
 	AudioBuffer* get_buffer(){return &buffer_;}
+	VUMeter& get_vu_meter(){return vuMeter_;}
 
 };
 
@@ -344,6 +346,8 @@ class Loudspeaker : public DynamicObject{
 	Vec3 pos_;
 	float az_, el_;
 	float gain_;
+protected:
+	VUMeter vuMeter_;
 public:
 	Loudspeaker(const xmlpp::Node* node, ResoundSession* session);
 	/// class is expected to make its next buffer of audio ready to be written too.
@@ -354,6 +358,8 @@ public:
 	AudioBuffer* get_buffer(){return &buffer_;}
 	/// return the speakers position relative to the origin.
 	const Vec3& get_position() const {return pos_;}
+	/// return the vumetering object
+	VUMeter& get_vu_meter(){return vuMeter_;}
 };
 
 // dsp chain psuedo
@@ -429,5 +435,10 @@ public:
 
 	/// jack dsp callback
 	virtual int on_process(jack_nframes_t nframes);
+	
+	/// send osc relating to regular feedback to any listening clients
+	/// this should be called periodicaly by a thread
+	/// sends vu metering osc for each loudspeaker and audiostream.
+	void send_osc_feedback();
 
 };

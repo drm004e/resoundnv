@@ -160,6 +160,9 @@ void Livestream::process(jack_nframes_t nframes){
 	ab_copy_with_gain(port_->get_audio_buffer(nframes), get_buffer()->get_buffer(),nframes, get_gain());
 
 	//avg_signal_in_buffer(get_buffer()->get_buffer(),nframes); // sound tested here
+
+	//TODO optional vumetering
+	get_vu_meter().analyse_buffer(get_buffer()->get_buffer(),nframes);
 };
 
 Loudspeaker::Loudspeaker(const xmlpp::Node* node, ResoundSession* session) : DynamicObject(node,session)
@@ -201,6 +204,9 @@ void Loudspeaker::post_process(jack_nframes_t nframes){
 
 	ab_copy_with_gain(buffer_.get_buffer(), port_->get_audio_buffer(nframes), nframes, gain_);
 	//std::cout << "Loudspeaker::post_process" << std::endl;
+
+	//TODO optional vumetering
+	vuMeter_.analyse_buffer(buffer_.get_buffer(),nframes);
 }
 
 Alias::Alias(const xmlpp::Node* node){
@@ -896,6 +902,20 @@ int ResoundSession::on_process(jack_nframes_t nframes){
 	return 0;
 }
 
+void ResoundSession::send_osc_feedback(){
+	for(unsigned int n = 0; n < audioStreams_.size(); ++n){
+		VUMeter& meter = audioStreams_[n]->get_vu_meter();
+		std::string addr(std::string("/")+audioStreams_[n]->get_id());
+		send_osc_to_all_clients(addr.c_str(),"fff",meter.get_rms(),meter.get_peak(),meter.get_margin());
+	}
+
+	for(unsigned int n = 0; n < loudspeakers_.size(); ++n){
+		VUMeter& meter = loudspeakers_[n]->get_vu_meter();
+		std::string addr(std::string("/")+loudspeakers_[n]->get_id());
+		send_osc_to_all_clients(addr.c_str(),"fff",meter.get_rms(),meter.get_peak(),meter.get_margin(),LO_ARGS_END);
+	}
+}
+
 // ------------------------------- Globals and entry point -----------------------------------
 
 CLIOptions g_options;
@@ -943,7 +963,7 @@ int main(int argc, char** argv){
 	// for now we take the first arg and use it as the filename for xml
 	std::cout << "resoundnv server v0.0.1\n";
 	std::cout << "Loading config from " << g_options.inputXML_ << std::endl;
-
+	ResoundSession* session;
 	// loading and parsing the xml
 //	try
 //	{
@@ -959,7 +979,7 @@ int main(int argc, char** argv){
 				std::string name = nodeElement->get_name();
 				if(name=="resoundnv"){
 					std::cout << "Resoundnv XML node found, building session.\n";
-					ResoundSession* session = new ResoundSession(g_options);
+					session = new ResoundSession(g_options);
 					session->load_from_xml(nodeElement);
 				}
 			}
@@ -973,5 +993,8 @@ int main(int argc, char** argv){
 
 	while(1){ // TODO this should really listen for incoming signals, see unix programming book.
 		usleep(10000);
+		// use this thread to send some feedback
+		session->update_clients();
+		session->send_osc_feedback();
 	}
 }
