@@ -53,23 +53,23 @@
 	<loudspeaker id="G7" type="Genelec1029" x="-2" y="1" z="-1" as="" el="" port="pure_data_0:input6"/>
 	<loudspeaker id="G8" type="Genelec1030" x="2" y="1" z="-1" as="" el="" port="pure_data_0:input7"/>
 
-	<loudspeaker id="G9" type="Genelec1029" x="-2" y="1" z="2" as="" el="" port="pure_data_0:input8"/>
-	<loudspeaker id="G10" type="Genelec1029" x="2" y="1" z="2" as="" el="" port="pure_data_0:input9"/>
-	<loudspeaker id="G11" type="Genelec1029" x="-2" y="1" z="1" as="" el="" port="pure_data_0:input10"/>
-	<loudspeaker id="G12" type="Genelec1030" x="2" y="1" z="1" as="" el="" port="pure_data_0:input11"/>
-	<loudspeaker id="G13" type="Genelec1029" x="-2" y="1" z="0" as="" el="" port="pure_data_0:input12"/>
-	<loudspeaker id="G14" type="Genelec1029" x="2" y="1" z="0" as="" el="" port="pure_data_0:input13"/>
-	<loudspeaker id="G15" type="Genelec1029" x="-2" y="1" z="-1" as="" el="" port="pure_data_0:input14"/>
-	<loudspeaker id="G16" type="Genelec1030" x="2" y="1" z="-1" as="" el="" port="pure_data_0:input15"/>
+	<loudspeaker id="G9" type="Genelec1029" x="-2" y="2" z="2" as="" el="" port="pure_data_0:input8"/>
+	<loudspeaker id="G10" type="Genelec1029" x="2" y="2" z="2" as="" el="" port="pure_data_0:input9"/>
+	<loudspeaker id="G11" type="Genelec1029" x="-2" y="2" z="1" as="" el="" port="pure_data_0:input10"/>
+	<loudspeaker id="G12" type="Genelec1030" x="2" y="2" z="1" as="" el="" port="pure_data_0:input11"/>
+	<loudspeaker id="G13" type="Genelec1029" x="-2" y="2" z="0" as="" el="" port="pure_data_0:input12"/>
+	<loudspeaker id="G14" type="Genelec1029" x="2" y="2" z="0" as="" el="" port="pure_data_0:input13"/>
+	<loudspeaker id="G15" type="Genelec1029" x="-2" y="2" z="-1" as="" el="" port="pure_data_0:input14"/>
+	<loudspeaker id="G16" type="Genelec1030" x="2" y="2" z="-1" as="" el="" port="pure_data_0:input15"/>
 
-	<loudspeaker id="G17" type="Genelec1029" x="-2" y="1" z="2" as="" el="" port="pure_data_0:input16"/>
-	<loudspeaker id="G18" type="Genelec1029" x="2" y="1" z="2" as="" el="" port="pure_data_0:input17"/>
-	<loudspeaker id="G19" type="Genelec1029" x="-2" y="1" z="1" as="" el="" port="pure_data_0:input18"/>
-	<loudspeaker id="G20" type="Genelec1030" x="2" y="1" z="1" as="" el="" port="pure_data_0:input19"/>
-	<loudspeaker id="G21" type="Genelec1029" x="-2" y="1" z="0" as="" el="" port="pure_data_0:input20"/>
-	<loudspeaker id="G22" type="Genelec1029" x="2" y="1" z="0" as="" el="" port="pure_data_0:input21"/>
-	<loudspeaker id="G23" type="Genelec1029" x="-2" y="1" z="-1" as="" el="" port="pure_data_0:input22"/>
-	<loudspeaker id="G24" type="Genelec1030" x="2" y="1" z="-1" as="" el="" port="pure_data_0:input23"/>
+	<loudspeaker id="G17" type="Genelec1029" x="-2" y="3" z="2" as="" el="" port="pure_data_0:input16"/>
+	<loudspeaker id="G18" type="Genelec1029" x="2" y="3" z="2" as="" el="" port="pure_data_0:input17"/>
+	<loudspeaker id="G19" type="Genelec1029" x="-2" y="3" z="1" as="" el="" port="pure_data_0:input18"/>
+	<loudspeaker id="G20" type="Genelec1030" x="2" y="3" z="1" as="" el="" port="pure_data_0:input19"/>
+	<loudspeaker id="G21" type="Genelec1029" x="-2" y="3" z="0" as="" el="" port="pure_data_0:input20"/>
+	<loudspeaker id="G22" type="Genelec1029" x="2" y="3" z="0" as="" el="" port="pure_data_0:input21"/>
+	<loudspeaker id="G23" type="Genelec1029" x="-2" y="3" z="-1" as="" el="" port="pure_data_0:input22"/>
+	<loudspeaker id="G24" type="Genelec1030" x="2" y="3" z="-1" as="" el="" port="pure_data_0:input23"/>
 
 	<cls id="mains1">
 		<alias id="L" ref="G1"/>

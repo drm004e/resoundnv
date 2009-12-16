@@ -13,6 +13,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import xml.dom.minidom as minidom
 import liblo
+import math
 
 
 
@@ -132,7 +133,7 @@ class ResoundXMLParser():
 		oscServer.add_method(None, None, fallback)
 			
 
-g_resound = ResoundXMLParser('../test8.xml')
+g_resound = ResoundXMLParser('../test24.xml')
 
 # this is an on idle callback to check osc
 def update_osc():
@@ -149,6 +150,8 @@ class GLDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
 		self.connect('configure_event', self._on_configure_event)
 		self.connect('expose_event',	self._on_expose_event)
 		gobject.timeout_add(50,self.animate_callback)
+
+		self.phasor = 0.0
 
 	def _on_realize(self, *args):
 		glwidget = self.get_gl_drawable()
@@ -197,13 +200,19 @@ class GLDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
 
 		if not glwidget.gl_begin(glcontext):
 			return False
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		self.phasor += 0.005
+		if self.phasor >= 1.0 : self.phasor = 0.0
+
+		gluLookAt(math.sin(self.phasor * 2.0 * math.pi) * 10, 5.0, math.cos(self.phasor * 2.0 * math.pi) * 10,  0.0, 1.0, 0.0,  0.0, 1.0, 0.0)
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		draw_floor(10,10)
 		for l in g_resound.loudspeakers:
 			glPushMatrix()
 			glTranslate(l.x,l.y,l.z)
-			draw_box(0.4,0.4 + l.peak,0.4)
+			draw_box(0.4 + l.rms, 0.4 + l.peak,0.4)
 			glPopMatrix()
 
 		if glwidget.is_double_buffered():
