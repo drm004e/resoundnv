@@ -424,7 +424,7 @@ BParam::BParam(const xmlpp::Node* node, ResoundSession* session){
 int BParam::lo_cb_params(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data){
 	BParam* param = static_cast<BParam*>(user_data);
 	param->value_ = argv[0]->f; // TODO validation here required
-	std::cout << "OSC BParam "<< path<< " " <<param->value_<< std::endl;
+	//std::cout << "OSC BParam "<< path<< " " <<param->value_<< std::endl; // debug print
     return 1;
 }
 
@@ -992,9 +992,9 @@ int main(int argc, char** argv){
 //	}
 
 	while(1){ // TODO this should really listen for incoming signals, see unix programming book.
-		usleep(10000);
+		usleep(100000); // around 10 fps
 		// use this thread to send some feedback
-		session->update_clients();
+		//session->update_clients();
 		session->send_osc_feedback();
 	}
 }

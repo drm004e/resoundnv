@@ -134,8 +134,9 @@ public:
 			++count_;
 		}
 		if(count_ >= size_){
-			rms_ = std::sqrt(sumOfSquares_);
+			rms_ = std::sqrt(sumOfSquares_/float(size_));
 			sumOfSquares_ = 0.0f;
+			count_ = 0;
 		}
 	}
 	float get_rms() const { return rms_; }
