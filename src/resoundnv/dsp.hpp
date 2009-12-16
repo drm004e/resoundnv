@@ -106,6 +106,44 @@ public:
 	}
 };
 
+/// a vu metering class
+class VUMeter{
+private:
+	int size_;
+	float rms_;
+	float peak_;
+	float margin_;
+	float sumOfSquares_;
+	int count_;
+public:
+	VUMeter(int size=4096) : 
+		size_(size), 
+		rms_(0.0f), 
+		peak_(0.0f), 
+		margin_(0.0f), 
+		sumOfSquares_(0.0f), 
+		count_(0){}
+	void analyse_buffer(float* buffer, int N){
+		for(int n=0; n<N; ++n){
+			float v = buffer[n];
+			float magv = std::abs(v);
+			sumOfSquares_ += v*v;
+			peak_ = peak_ < magv ? magv : peak_;
+			peak_ *= 0.9999; /// peak falloff
+			margin_ = margin_ < magv ? magv : margin_;
+			++count_;
+		}
+		if(count_ >= size_){
+			rms_ = std::sqrt(sumOfSquares_);
+			sumOfSquares_ = 0.0f;
+		}
+	}
+	float get_rms() const { return rms_; }
+	float get_peak() const { return peak_; }
+	float get_margin() const { return margin_; }
+	void  reset_margin(){ margin_=0.0f; }
+};
+
 /// a function to perform wrap around on a floating point value
 /// wraps the input - very useful with phasors
 inline float wrap(float op){return std::fmod(op,1.0f);}
