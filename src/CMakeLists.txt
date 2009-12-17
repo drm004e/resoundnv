@@ -28,3 +28,6 @@ ENDIF(UNIX)
 
 add_executable(resoundnv-server core.cpp jackengine.cpp oscmanager.cpp dsp.cpp)
 target_link_libraries(resoundnv-server ${LIBS})
+
+add_executable(resoundnv-calibrate resoundnv_cal.cpp)
+target_link_libraries(resoundnv-calibrate ${LIBS})
