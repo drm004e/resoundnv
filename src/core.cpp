@@ -180,24 +180,25 @@ Diskstream::~Diskstream(){
 void Diskstream::disk_process(){
 	// find out how much space is on the ring buffer available for writing
 	// read that much from disk and copy into ring buffer
-	size_t bytesToWrite = jack_ringbuffer_write_space(ringBuffer_) - 1;
-	if(bytesToWrite > 512) bytesToWrite = 512;
-
-	size_t framesToWrite = bytesToWrite/sizeof(float);
-	if (bytesToWrite > 0){
-		printf("bytesToWrite = %i\n",bytesToWrite);
-		size_t frames = sf_readf_float(file_, diskBuffer_, framesToWrite);
-		// TODO de-interleaving, really needs an audio pool to be efficient
-		if( frames < framesToWrite){
-			printf("Silence\n");
-			// fill with silence, happens at end of file and thereafter
-			for(size_t n = frames; n < framesToWrite; ++n){
-				diskBuffer_[n] = 0.0f;
+	size_t bytesToWrite = jack_ringbuffer_write_space(ringBuffer_);
+	if(bytesToWrite > 4096){
+		bytesToWrite = 1024;
+		size_t framesToWrite = bytesToWrite/sizeof(float);
+		if (bytesToWrite > 0){
+			//printf("bytesToWrite = %i\n",bytesToWrite);
+			size_t frames = sf_readf_float(file_, diskBuffer_, framesToWrite);
+			// TODO de-interleaving, really needs an audio pool to be efficient
+			if( frames < framesToWrite){
+				printf("Silence\n");
+				// fill with silence, happens at end of file and thereafter
+				for(size_t n = frames; n < framesToWrite; ++n){
+					diskBuffer_[n] = 0.0f;
+				}
 			}
+			//avg_signal_in_buffer(diskBuffer_,framesToWrite); // audio tested and arrives here
+			size_t bytesWritten = jack_ringbuffer_write(ringBuffer_, (char*)diskBuffer_, bytesToWrite);
+			//printf("DiskBuffer read %i frames from disk and wrote %i bytes\n",frames,bytesWritten);
 		}
-		avg_signal_in_buffer(diskBuffer_,framesToWrite); // audio tested and arrives here
-		size_t bytesWritten = jack_ringbuffer_write(ringBuffer_, (char*)diskBuffer_, bytesToWrite);
-		printf("DiskBuffer read %i frames from disk and wrote %i bytes\n",frames,bytesWritten);
 	}
 	
 	// this function is only worth calling if a jack process has happened so we use cond_wait for this in master thread
@@ -213,18 +214,18 @@ void Diskstream::process(jack_nframes_t nframes){
 	// we need to skip those on the next buffer, is there any point attempting to get back in sync? we have already glitched
 	//float tbuffer[4096];
 	size_t bytesToRead = nframes * sizeof(float);
-	printf("bytesToRead = %i\n",bytesToRead);
+	//printf("bytesToRead = %i\n",bytesToRead);
 	size_t rSpace = jack_ringbuffer_read_space (ringBuffer_);
 	if(rSpace >= bytesToRead){
 		size_t bytesRead = jack_ringbuffer_read (ringBuffer_, (char*)get_buffer()->get_buffer(), bytesToRead);
 		//size_t bytesRead = jack_ringbuffer_read (ringBuffer_, (char*)tbuffer, bytesToRead);
 		//TODO gain should be applied here
-		printf("Buffer read %i bytes, from %i available\n",bytesRead, rSpace);
+		//printf("Buffer read %i bytes, from %i available\n",bytesRead, rSpace);
 	} else {
 		// buffer underrun
 		printf("Buffer underrun!\n");
 	}
-	avg_signal_in_buffer(get_buffer()->get_buffer(),nframes);
+	//avg_signal_in_buffer(get_buffer()->get_buffer(),nframes);
 	//avg_signal_in_buffer(tbuffer,nframes);
 	get_vu_meter().analyse_buffer(get_buffer()->get_buffer(),nframes);
 
@@ -1026,7 +1027,7 @@ void ResoundSession::send_osc_feedback(){
 void ResoundSession::diskstream_process(){
 	pthread_mutex_lock (&diskstreamThreadLock_);
 	while(1){
-		printf("Diskstream load\n");
+		//printf("Diskstream load\n");
 		for(unsigned int n = 0; n < diskStreams_.size(); ++n){
 			diskStreams_[n]->disk_process();
 		}
