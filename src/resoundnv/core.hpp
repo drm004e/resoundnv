@@ -35,6 +35,14 @@
 
 #include <libxml++/libxml++.h>
 
+#include <jack/jack.h>
+#include <jack/ringbuffer.h>
+#include <sndfile.h>
+
+#include <pthread.h>
+
+
+
 class Exception : public std::exception {
 	const char* msg_;
 public:
@@ -271,12 +279,26 @@ public:
 
 /// a stream - a wrapper around an available input buffer
 class Diskstream : public AudioStream {
+	jack_ringbuffer_t* ringBuffer_; ///< a ring buffer is used to ensure non-locking thread safe read
+	static const size_t DISK_STREAM_RING_BUFFER_SIZE = 4096;
+	float* diskBuffer_;
+	SNDFILE* file_;
+	SF_INFO info_;
+	std::string path_;
 public:
 
+	/// construct
 	Diskstream(const xmlpp::Node* node, ResoundSession* session);
 
-	/// class is expected to make its next buffer of audio ready.
-	virtual void process(jack_nframes_t nframes){};
+	/// destruct
+	virtual ~Diskstream();
+
+	/// class is expected to pull as much data as it can from disk into the ring buffer
+	/// this is called from a disk reading thread
+	virtual void disk_process();
+
+	/// class is expected to make its next buffer of audio ready. read a block from the ringbuffer
+	virtual void process(jack_nframes_t nframes);
 };
 
 /// a stream - a wrapper around an available input buffer
@@ -393,6 +415,9 @@ private:
 	typedef std::vector<AudioStream*> AudioStreamVector;
 	AudioStreamVector audioStreams_;
 
+	typedef std::vector<Diskstream*> DiskstreamVector;
+	DiskstreamVector diskStreams_;
+
 	typedef std::vector<Loudspeaker*> LoudspeakerVector;
 	LoudspeakerVector loudspeakers_;
 
@@ -402,6 +427,12 @@ private:
 	/// map of behaviour factories by plugin name
 	typedef std::map<ObjectId,BehaviourFactory> BehaviourFactoryMap;
 	BehaviourFactoryMap behaviourFactories_;
+
+	/// the thread id for the diskstream loading thread
+	pthread_t diskstreamThreadId_;
+	pthread_mutex_t diskstreamThreadLock_;
+	pthread_cond_t  diskstreamThreadReady_;
+
 
 public:
 	/// construct a new session from the xml file specified
@@ -441,4 +472,11 @@ public:
 	/// sends vu metering osc for each loudspeaker and audiostream.
 	void send_osc_feedback();
 
+
+
+private:
+	/// check disk input buffers are full and cause a load if they are not
+	/// called by the disk input thread, syncronised by the process thread.
+	void diskstream_process();
+	static void* diskstream_thread (void *arg);
 };

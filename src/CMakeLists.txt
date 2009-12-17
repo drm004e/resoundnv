@@ -14,7 +14,7 @@ find_package(LibXML++ REQUIRED)
 find_package(Jack REQUIRED)
 # TODO could do with a proper check for liblo here
 include_directories(${LibXML++_INCLUDE_DIRS} ${JACK_INCLUDE_DIRS})
-set(LIBS ${LIBS} ${LibXML++_LIBRARIES} ${JACK_LIBRARIES} lo boost_program_options)
+set(LIBS ${LIBS} ${LibXML++_LIBRARIES} ${JACK_LIBRARIES} lo boost_program_options sndfile)
 
 
 

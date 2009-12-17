@@ -1,0 +1,47 @@
+<resoundnv>
+	<!--
+//    Resound
+//    Copyright 2009 David Moore and James Mooney
+//
+//    This file is part of Resound.
+//
+//    Resound is free software; you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation; either version 2 of the License, or
+//    (at your option) any later version.
+//
+//    Resound is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+//
+//    You should have received a copy of the GNU General Public License
+//    along with Resound; if not, write to the Free Software
+//    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+	-->
+	<diskstream id="disk1" source="testsound1.wav" gain="1.0"/>
+	<diskstream id="disk2" source="testsound2.wav" gain="1.0"/>
+
+	<cass id="disksource1">
+		<alias id="L" ref="disk1"/>
+		<alias id="R" ref="disk2"/>
+	</cass>
+
+
+	<loudspeaker id="G1" type="Genelec 1029" port="system:playback_1" x="-1" y="1.00" z="2" gain="1.0"/>
+	<loudspeaker id="G2" type="Genelec 1029" port="system:playback_2" x="1" y="1.00" z="2" gain="1.0"/>
+
+	<cls id="mains">
+		<alias id="L" ref="G1"/>
+		<alias id="R" ref="G2"/>
+	</cls>
+
+	<behaviour class="att" id="source_to_mains">
+		<routeset>
+			<route from="disksource1" to="mains" gain = "1.0"/>
+		</routeset>
+		<param id="level" address="/fader1" value="1.0"/>
+	</behaviour>
+
+</resoundnv>

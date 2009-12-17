@@ -61,7 +61,7 @@ void ab_sum_with_gain(const float* src, float* dest, size_t N, float gain){
 	}
 }
 
-void ab_sum_with_gain_linear_interp(const float* src, float* dest, size_t N, float gain, float oldGain, int interpSize){
+void ab_sum_with_gain_linear_interp(const float* src, float* dest, size_t N, float gain, float oldGain, size_t interpSize){
 	assert(interpSize<=N);
 	float interpStep = 1.0/(float)interpSize;
 	for(size_t n=0; n < interpSize; ++n){
@@ -140,9 +140,94 @@ AudioStream::AudioStream(const xmlpp::Node* node, ResoundSession* session) : Dyn
 	buffer_.allocate(s);
 }
 
-Diskstream::Diskstream(const xmlpp::Node* node, ResoundSession* session) : AudioStream(node,session)
+Diskstream::Diskstream(const xmlpp::Node* node, ResoundSession* session) : 
+		AudioStream(node,session),
+		ringBuffer_(0),
+		diskBuffer_(0)
 {
-	// this node will need to establish a diskstream from a filename, probably via some audio pool
+	// diskstream maintains a jack ring buffer and two process functions are called from seperate threads	
+	// create a ring buffer	
+	// open the file for reading
+	// check channels and assert mono
+	// read as much as possible into the ring buffer
+
+	const xmlpp::Element* nodeElement = dynamic_cast<const xmlpp::Element*>(node);
+	path_ = get_attribute_string(nodeElement,"source");
+	ringBuffer_ = jack_ringbuffer_create(DISK_STREAM_RING_BUFFER_SIZE*sizeof(float));
+	memset(ringBuffer_->buf, 0, ringBuffer_->size); // clear the buffer
+
+	diskBuffer_ = new float[DISK_STREAM_RING_BUFFER_SIZE]; // TODO de-interleaving, really needs an audio pool to be efficient
+	memset(diskBuffer_, 0, DISK_STREAM_RING_BUFFER_SIZE * sizeof(float)); // clear the buffer
+
+	file_ = sf_open(path_.c_str(), SFM_READ, &info_);
+	if(!file_){
+		throw Exception("Disk stream cannot load file, does it exist?");
+	}
+	if(info_.channels > 1){
+		throw Exception("Disk stream cannot load multichannel audio files, use split mono.");
+	}
+
+	disk_process();
+}
+
+Diskstream::~Diskstream(){
+	// free ring buffer, disk buffer and file
+	jack_ringbuffer_free(ringBuffer_);
+	if(diskBuffer_) delete [] diskBuffer_;
+	sf_close(file_);
+}
+
+void Diskstream::disk_process(){
+	// find out how much space is on the ring buffer available for writing
+	// read that much from disk and copy into ring buffer
+	size_t bytesToWrite = jack_ringbuffer_write_space(ringBuffer_) - 1;
+	if(bytesToWrite > 512) bytesToWrite = 512;
+
+	size_t framesToWrite = bytesToWrite/sizeof(float);
+	if (bytesToWrite > 0){
+		printf("bytesToWrite = %i\n",bytesToWrite);
+		size_t frames = sf_readf_float(file_, diskBuffer_, framesToWrite);
+		// TODO de-interleaving, really needs an audio pool to be efficient
+		if( frames < framesToWrite){
+			printf("Silence\n");
+			// fill with silence, happens at end of file and thereafter
+			for(size_t n = frames; n < framesToWrite; ++n){
+				diskBuffer_[n] = 0.0f;
+			}
+		}
+		avg_signal_in_buffer(diskBuffer_,framesToWrite); // audio tested and arrives here
+		size_t bytesWritten = jack_ringbuffer_write(ringBuffer_, (char*)diskBuffer_, bytesToWrite);
+		printf("DiskBuffer read %i frames from disk and wrote %i bytes\n",frames,bytesWritten);
+	}
+	
+	// this function is only worth calling if a jack process has happened so we use cond_wait for this in master thread
+	// however this function is also called on init so we cant wait here.
+}
+
+void Diskstream::process(jack_nframes_t nframes){
+	// find out how much space is available for reading on the buffer
+	// if we have enough for the whole block we are ok
+	// otherwise we have to call it a buffer underrun
+	// write as much as we can then fill with zeros
+	// The problem here is that this disk stream will now be out of playback sync by a number of samples
+	// we need to skip those on the next buffer, is there any point attempting to get back in sync? we have already glitched
+	//float tbuffer[4096];
+	size_t bytesToRead = nframes * sizeof(float);
+	printf("bytesToRead = %i\n",bytesToRead);
+	size_t rSpace = jack_ringbuffer_read_space (ringBuffer_);
+	if(rSpace >= bytesToRead){
+		size_t bytesRead = jack_ringbuffer_read (ringBuffer_, (char*)get_buffer()->get_buffer(), bytesToRead);
+		//size_t bytesRead = jack_ringbuffer_read (ringBuffer_, (char*)tbuffer, bytesToRead);
+		//TODO gain should be applied here
+		printf("Buffer read %i bytes, from %i available\n",bytesRead, rSpace);
+	} else {
+		// buffer underrun
+		printf("Buffer underrun!\n");
+	}
+	avg_signal_in_buffer(get_buffer()->get_buffer(),nframes);
+	//avg_signal_in_buffer(tbuffer,nframes);
+	get_vu_meter().analyse_buffer(get_buffer()->get_buffer(),nframes);
+
 }
 
 Livestream::Livestream(const xmlpp::Node* node, ResoundSession* session) : AudioStream(node,session)
@@ -654,7 +739,7 @@ AmpPanBehaviour::AmpPanBehaviour(const xmlpp::Node* node, ResoundSession* sessio
 	// setup storage for previous gain suitable for interpolation
 	LoudspeakerArray& outputs = get_outputs();
 	oldGains_ = new float[outputs.size()];
-	for(int n = 0; n < outputs.size(); ++n){	
+	for(unsigned int n = 0; n < outputs.size(); ++n){	
 		oldGains_[n] = 0.0f;
 	}
 	assert(get_inputs().size() > 0);
@@ -669,7 +754,7 @@ void AmpPanBehaviour::process(jack_nframes_t nframes){
 	AudioStreamArray& inputs = get_inputs();
 	float* in = inputs[0]->get_buffer()->get_buffer(); // ignore all others for now
 	LoudspeakerArray& outputs = get_outputs();
-	for(int o = 0; o < outputs.size(); ++o){
+	for(unsigned int o = 0; o < outputs.size(); ++o){
 		Vec3 dPos = pos_ - outputs[o]->get_position();
 		float D = dPos.mag();
 		D = D < 1.0f ? 1.0f : D;
@@ -685,8 +770,12 @@ void AmpPanBehaviour::process(jack_nframes_t nframes){
 ResoundSession::ResoundSession(CLIOptions options) : 
 		Resound::OSCManager(options.oscPort_.c_str()),
 		options_(options) {
-	// registering some factories
 
+	// diskstream threads
+	pthread_mutex_init (&diskstreamThreadLock_, NULL);
+	pthread_cond_init(&diskstreamThreadReady_, NULL);
+
+	// registering some factories
 	register_behaviour_factory("att", AttBehaviour::factory);
 	register_behaviour_factory("mpc", MultipointCrossfadeBehaviour::factory);
 	register_behaviour_factory("chase", ChaseBehaviour::factory);
@@ -696,6 +785,8 @@ ResoundSession::ResoundSession(CLIOptions options) :
 	register_behaviour_factory("iobehaviour", MinimalIOBehaviour::factory); // for now
 
 	init("resoundnv-session");
+
+	///activate jack ports cannot be connected until active
 	start();
 }
 
@@ -753,6 +844,10 @@ void ResoundSession::load_from_xml(const xmlpp::Node* node){
 	}
 	// now loaded so sort out the fast lookup object tables
 	build_dsp_object_lookups();
+
+	/// create the disk thread
+	pthread_create (&diskstreamThreadId_, NULL, ResoundSession::diskstream_thread, this);
+
 }
 
 Behaviour* ResoundSession::create_behaviour_from_node(const xmlpp::Node* node){
@@ -873,9 +968,11 @@ void ResoundSession::build_dsp_object_lookups(){
 	DynamicObjectMap::iterator it = dynamicObjects_.begin();
 	for(;it != dynamicObjects_.end(); ++it){
 		AudioStream* stream = dynamic_cast<AudioStream*>( it->second );
+		Diskstream* diskstream = dynamic_cast<Diskstream*>( it->second );
 		Loudspeaker* loudspeaker = dynamic_cast<Loudspeaker*>( it->second );
 		Behaviour* behaviour = dynamic_cast<Behaviour*>( it->second );
 		if(stream) { audioStreams_.push_back(stream); }
+		if(diskstream) { diskStreams_.push_back(diskstream); }
 		if(loudspeaker) { loudspeakers_.push_back(loudspeaker); }
 		if(behaviour) { behaviours_.push_back(behaviour); }
 
@@ -883,10 +980,19 @@ void ResoundSession::build_dsp_object_lookups(){
 }
 
 int ResoundSession::on_process(jack_nframes_t nframes){
+
 	// TODO need mutex arangment here for object creation and destruction
 	for(unsigned int n = 0; n < audioStreams_.size(); ++n){
 		audioStreams_[n]->process(nframes);
 	}
+	
+	// if we can, signal to the diskstream thread that more data can probably be loaded
+	// TODO put some sort of throttleing on this to allow jack to read a few blocks before bothering to fill buffers
+	if (pthread_mutex_trylock (&diskstreamThreadLock_) == 0) {
+		pthread_cond_signal (&diskstreamThreadReady_);
+		pthread_mutex_unlock (&diskstreamThreadLock_);
+	}
+
 	// loudspeakers must be preprocessed to clear buffers
 	for(unsigned int n = 0; n < loudspeakers_.size(); ++n){
 		loudspeakers_[n]->pre_process(nframes);
@@ -914,6 +1020,29 @@ void ResoundSession::send_osc_feedback(){
 		std::string addr(std::string("/")+loudspeakers_[n]->get_id());
 		send_osc_to_all_clients(addr.c_str(),"fff",meter.get_rms(),meter.get_peak(),meter.get_margin(),LO_ARGS_END);
 	}
+}
+
+/// this should be called from the disk management thread
+void ResoundSession::diskstream_process(){
+	pthread_mutex_lock (&diskstreamThreadLock_);
+	while(1){
+		printf("Diskstream load\n");
+		for(unsigned int n = 0; n < diskStreams_.size(); ++n){
+			diskStreams_[n]->disk_process();
+		}
+		//now wait for process thread to signal
+		pthread_cond_wait (&diskstreamThreadReady_, &diskstreamThreadLock_);
+
+	}
+	err:
+		pthread_mutex_unlock (&diskstreamThreadLock_);
+}
+
+void* ResoundSession::diskstream_thread (void *arg){
+	// cast arg to resound session
+	ResoundSession* session = (ResoundSession*) arg;
+	session->diskstream_process();
+	return 0;
 }
 
 // ------------------------------- Globals and entry point -----------------------------------
