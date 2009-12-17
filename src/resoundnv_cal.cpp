@@ -73,45 +73,16 @@ double rad2deg(double v){
 double deg2rad(double v){
 	return v * PI/180.;
 }
-
-bool triangulate(Vec3& result, double dt1, double dt2, double dt3, double tol){
-	// x axis is left -ve to right +ve, calibrate center
-	// y axis is up +ve down -ve , floor is 0.0
-	// z axis is front +ve back -ve 0.0 is back line of triangle
-	double size = 1.;
-	Vec3 pos1(-size/2.,0,0);
-	Vec3 pos2(size/2.,0,0);
-	Vec3 pos3(0,0,size * sin(deg2rad(60.)));
-	
-	// cosine rule for angle at pos1
-	// angle = A, b = distance between mics i.e. 1m, c = dt1 and a= dt2
-	double a = dt2;	
-	double b = 1.0;
-	double c = dt1;
-	double A = acos((b*b + c*c - a*a)/(2.*b*c));
-	//std::cout <<"Angle=" << A << std::endl;
-	// distance between po1 and pos2 in x axis
-	// x position = c * cos(A) -.5 because of offset triangle
-	double x = c*cos(A) - .5;
-	// radius of the arg we need to trace
-	double r = c*sin(A);
-	/// 180 degree arc should find what we want within this
-	double bestMatch = 0.;
-	double lowestDiff = 999999;
-	for(double tAngle = 0. ; tAngle <= PI ; tAngle += 0.0001){
-		double y,z;
-		y = r * sin(tAngle);
-		z = r * cos(tAngle);
-		double d = distance(Vec3(x,y,z),pos3);
-		double diff = fabs(dt3-d);
-		if(diff < lowestDiff){
-			lowestDiff = diff;
-			result = Vec3(x,y,z);
-			//std::cout << "r=" << r << " angle="<< tAngle << " x=" << x << " y=" << y << " z=" << z << " d=" << d << " match="<<match<<std::endl;
-		}
-	}
-	if(lowestDiff <= tol) return true;
-	return false;
+inline double sqr(double x) {return x*x;}
+bool triangulate(Vec3& result, double r1, double r2, double r3, double tol){
+	double x,y,z;
+	x = (sqr(r1) - sqr(r2) + 1.0)/2.0;
+	y = (sqr(r1) - sqr(r3) + 2.0) / 2.0 - x;
+	z = sqrt( sqr(r1) - sqr(x) - sqr(y) );
+	result.x = x;
+	result.y = y;
+	result.z = z;
+	return true;
 }
 
 /// class for peak detection on a sequence of samples
@@ -119,18 +90,21 @@ class PeakFinder{
 	float m_peak;
 	int m_counter;
 	int m_index;
+	bool m_found;
+	static const float threshold=0.2f;
 public:
-	PeakFinder() : m_peak(0.0f), m_index(-1), m_counter(0) {}
+	PeakFinder() : m_peak(0.0f), m_index(-1), m_counter(0), m_found(false) {}
 	void test_sample(float v){
-		if(v > m_peak){ 
+		if(v > threshold && !m_found){ 
 			m_peak = v;
 			m_index = m_counter;
+			m_found=true;
 		}
 		++m_counter;
 	}
 	float get_peak(){return m_peak;}
 	int get_index(){return m_index;}
-	void reset(){m_peak = 0.0f; m_index=-1; m_counter=0;}
+	void reset(){m_peak = 0.0f; m_index=-1; m_counter=0; m_found=false;}
 };
 
 class CalibrationException : public std::exception{
@@ -207,7 +181,8 @@ public:
 		float* in = (float*)jack_port_get_buffer(m_inputPort,nframes);
 		while(nframes-- > 0){
 			if(m_impulseOnOne){
-				*out++ = g_impulseGain; m_impulseOnOne=false;
+				*out++ = 1.0f;
+				m_impulseOnOne=false;
 			} else {
 				*out++ = 0.0f;
 			}
@@ -236,7 +211,7 @@ bool parse(int argc, char** argv){
 		("help,h", "produce help message")
 		("capture,c", po::value<std::string>()->default_value("system:capture_1"), "set the capture port for the calibration mic")
 		("gain,g", po::value<double>()->default_value(1.0), "set the level of the impulse")
-		("threshold,t", po::value<double>()->default_value(0.2), "set the level of the detection threshold")
+		("threshold,t", po::value<double>()->default_value(0.1), "set the level of the detection threshold")
 		("tminus,T", po::value<int>()->default_value(0), "set the countdown timer in seconds")
 		("mode,m", po::value<int>()->default_value(0), "set the mode 0=single 1=multi")
 		("latency,l", po::value<int>()->default_value(384), "set the latency compensation in samples")
@@ -300,7 +275,7 @@ int main(int argc, char** argv){
 	if(jc) jack_client_close(jc);
 
 	// now do the calibration	
-	int N_SPEAKERS = portList.size();
+	int N_SPEAKERS = portList.size() > 8 ? 8 : portList.size();
 	LoudspeakerCal* speaker = new LoudspeakerCal[N_SPEAKERS];
 	for(int micPos = 0; micPos < 3; micPos++){
 		std::cout << "Ready\nPress a key to proceed with mic position "<<micPos<<"\n******************************************************\n* WARNING very loud noise bursts will be played back *\n******************************************************\n";
@@ -314,18 +289,29 @@ int main(int argc, char** argv){
 		}
 
 		for(int n = 0; n < N_SPEAKERS; n++){
-			ImpulseCalibrator ipc[3];
-			ipc[micPos].run_test(g_capturePortName.c_str(),portList[n].c_str(),128*32);
-			int s = ipc[micPos].m_pf.get_index() - g_latencyCompensation;
-			float peak = ipc[micPos].m_pf.get_peak();
-			if(peak >= g_threshold){
-				std::cout << "Impulse detected from " << portList[n].c_str() << " at index=" << ipc[micPos].m_pf.get_index()<<" ~"<< s <<" level=" << peak << std::endl;
-				const double SR = 44100.;
-				const double SOS = 340.29;
-				speaker[n].distance[micPos] = double(s) * 1./SR * SOS;
-				std::cout << "Distance=" <<speaker[n].distance[micPos] << " m\n";
+			const int numRuns = 5;
+			double D= 0.;
+			double sumD= 0.;
+			for(int run = 0; run < numRuns; ++run){ // run averaging
+				ImpulseCalibrator ipc[3];
+				ipc[micPos].run_test(g_capturePortName.c_str(),portList[n].c_str(),128*32);
+				int s = ipc[micPos].m_pf.get_index() - g_latencyCompensation;
+				float peak = ipc[micPos].m_pf.get_peak();
+				if(peak >= g_threshold){
+					std::cout << "Impulse detected from " << portList[n].c_str() << " at index=" << ipc[micPos].m_pf.get_index()<<" ~"<< s <<" level=" << peak << std::endl;
+					const double SR = 44100.;
+					const double SOS = 340.29;
+					D = double(s) * 1./SR * SOS;
+					sumD += D;
+					std::cout << "Distance=" << D << " m\n";
+				}
+				usleep(10000);
 			}
+			speaker[n].distance[micPos] = sumD / double(numRuns);
+			std::cout << "Avg Distance=" << speaker[n].distance[micPos] << " m\n";
+			usleep(500000);
 		}
+		
 	}
 
 	std::ofstream f("calibration.xml");
@@ -333,7 +319,7 @@ int main(int argc, char** argv){
 	for(int n = 0; n < N_SPEAKERS; n++){
 		if(triangulate(speaker[n].pos, speaker[n].distance[0],speaker[n].distance[1],speaker[n].distance[2], 0.001)){
 			std::cout << std::setprecision(2) << "Match found for " << portList[n].c_str() << " x=" << speaker[n].pos.x << " y=" << speaker[n].pos.y << " z=" << speaker[n].pos.z <<std::endl;
-			f << "<new id=\"loudspeaker"<<n<<"\" class=\"loudspeaker\" ref=\""<<portList[n].c_str()<<"\" x=\""<<speaker[n].pos.x<<"\" y=\""<<speaker[n].pos.y<<"\" z=\""<<speaker[n].pos.z<<"\"/>\n";
+			f << "<loudspeaker id=\"loudspeaker"<<n<<"\" port=\""<<portList[n].c_str()<<"\" x=\""<<speaker[n].pos.x<<"\" z=\""<<speaker[n].pos.y<<"\" y=\""<<speaker[n].pos.z<<"\"/>\n";
 		} else {
 			std::cout << "No match for " << portList[n].c_str() << std::endl;
 		}

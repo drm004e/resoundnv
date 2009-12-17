@@ -77,7 +77,7 @@ class ResoundXMLParser():
 				#print node.toxml()
 				self.loudspeakers.append(n)
 
-g_resound = ResoundXMLParser('roomschematic_example.xml')
+g_resound = ResoundXMLParser('../calibration.xml')
 
 class GLDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
 	def __init__(self, glconfig):
