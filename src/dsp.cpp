@@ -19,6 +19,66 @@
 #include "resoundnv/dsp.hpp"
 #include <iostream>
 
+
+AudioBuffer::AudioBuffer() : buffer_(0) {
+}
+AudioBuffer::~AudioBuffer(){
+	destroy();
+
+}
+void AudioBuffer::allocate( size_t size ){
+	destroy();
+	buffer_ = new float[size];
+	size_ = size;
+
+}
+void AudioBuffer::clear(){
+	std::memset(buffer_, 0, sizeof(float) * size_);
+}
+void AudioBuffer::destroy(){
+	if( buffer_ ) delete [] buffer_;
+	buffer_ = 0;
+	size_ = 0;
+}
+
+void ab_copy(const float* src, float* dest, size_t N ){
+	std::memcpy(dest, src, sizeof(float) * N);
+}
+void ab_copy_with_gain(const float* src, float* dest, size_t N, float gain){
+	for(size_t n=0; n < N; ++n){
+		dest[n] = src[n] * gain;
+	}
+}
+void ab_sum_with_gain(const float* src, float* dest, size_t N, float gain){
+	for(size_t n=0; n < N; ++n){
+		dest[n] += src[n] * gain;
+	}
+}
+
+void ab_sum_with_gain_linear_interp(const float* src, float* dest, size_t N, float gain, float oldGain, size_t interpSize){
+	assert(interpSize<=N);
+	float interpStep = 1.0/(float)interpSize;
+	for(size_t n=0; n < interpSize; ++n){
+		float v = interpStep *(float)n;
+		dest[n] += src[n] * (v*gain+(1-v)*oldGain);
+	}
+
+	for(size_t n=interpSize; n < N; ++n){
+		dest[n] += src[n] * gain;
+	}
+}
+
+void avg_signal_in_buffer(const float* src, size_t N){
+	float peak = 0.0f;
+	float sum = 0.0f;
+	for(size_t n=0; n < N; ++n){
+		float v = std::abs(src[n]);
+		sum += v;
+		if(peak < v) peak = v;
+	}
+	printf("RMS %f  Peak %f\n", sum/float(N), peak);
+}
+
 void LookupTable::print(){
 	for(size_t n=0; n < size_; ++n){
 		printf("%i %f\n",n,values_[n]);

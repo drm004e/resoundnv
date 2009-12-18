@@ -26,6 +26,27 @@ const float PI=3.14159;
 const float TWOPI=2.0f*PI;
 const float HALFPI=0.5f*PI;
 
+/// memory managed audio buffer
+class AudioBuffer {
+	size_t size_;
+	float* buffer_;
+public:
+	AudioBuffer();
+	~AudioBuffer();
+	void allocate( size_t size );
+	void clear();
+	void destroy();
+	float* get_buffer(){return buffer_;}
+	//float& operator [](unsigned int n){return buffer_[n];};
+	//float* operator *
+
+};
+
+void ab_copy(const float* src, float* dest, size_t N );
+void ab_copy_with_gain(const float* src, float* dest, size_t N, float gain);
+void ab_sum_with_gain(const float* src, float* dest, size_t N, float gain);
+void ab_sum_with_gain_linear_interp(const float* src, float* dest, size_t N, float gain, float oldGain, size_t interpSize);
+
 class LookupTable{
 private:
 	size_t size_;
