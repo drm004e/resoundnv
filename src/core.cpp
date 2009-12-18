@@ -791,6 +791,22 @@ ResoundSession::ResoundSession(CLIOptions options) :
 	start();
 }
 
+ResoundSession::~ResoundSession(){
+    printf("Session is closing...\n");
+    printf("Signalling OSC...\n");
+    printf("Signalling diskstream thread...\n");
+    if (pthread_mutex_lock (&diskstreamThreadLock_) == 0) {
+            diskstreamThreadContinue_ = false;
+            pthread_cond_signal (&diskstreamThreadReady_);
+            pthread_mutex_unlock (&diskstreamThreadLock_);
+    }
+    pthread_join(diskstreamThreadId_,0);
+    printf("Signalling Jack...\n");
+    stop(); // stop the jack thread
+    // TODO stop the diskthread here
+    printf("Done\n");
+}
+
 void ResoundSession::load_from_xml(const xmlpp::Node* node){
 	// throw if we get problems here
 	const xmlpp::Element* nodeElement = dynamic_cast<const xmlpp::Element*>(node);
@@ -1026,7 +1042,8 @@ void ResoundSession::send_osc_feedback(){
 /// this should be called from the disk management thread
 void ResoundSession::diskstream_process(){
 	pthread_mutex_lock (&diskstreamThreadLock_);
-	while(1){
+        diskstreamThreadContinue_ = true; // this gets switched of on shutdown
+	while(diskstreamThreadContinue_){
 		//printf("Diskstream load\n");
 		for(unsigned int n = 0; n < diskStreams_.size(); ++n){
 			diskStreams_[n]->disk_process();
@@ -1035,8 +1052,8 @@ void ResoundSession::diskstream_process(){
 		pthread_cond_wait (&diskstreamThreadReady_, &diskstreamThreadLock_);
 
 	}
-	err:
-		pthread_mutex_unlock (&diskstreamThreadLock_);
+	pthread_mutex_unlock (&diskstreamThreadLock_);
+        printf("Diskstream shutdown\n");
 }
 
 void* ResoundSession::diskstream_thread (void *arg){
@@ -1087,13 +1104,22 @@ void parse_command_arguments(int argc, char** argv){
 
 }
 
+ResoundSession* g_session = 0;
+bool g_continue = false;
+
+void handle_sigint(int sig){
+        signal(SIGINT, handle_sigint);
+        g_continue = false;
+        printf("Interupted - shutting down\n");
+}
+
 int main(int argc, char** argv){
 
 	parse_command_arguments(argc,argv);
 	// for now we take the first arg and use it as the filename for xml
 	std::cout << "resoundnv server v0.0.1\n";
 	std::cout << "Loading config from " << g_options.inputXML_ << std::endl;
-	ResoundSession* session;
+
 	// loading and parsing the xml
 //	try
 //	{
@@ -1109,8 +1135,8 @@ int main(int argc, char** argv){
 				std::string name = nodeElement->get_name();
 				if(name=="resoundnv"){
 					std::cout << "Resoundnv XML node found, building session.\n";
-					session = new ResoundSession(g_options);
-					session->load_from_xml(nodeElement);
+					g_session = new ResoundSession(g_options);
+					g_session->load_from_xml(nodeElement);
 				}
 			}
 		}
@@ -1120,11 +1146,15 @@ int main(int argc, char** argv){
 //		std::cout << "Server cannot continue"<< std::endl;
 //		std::exit(1);
 //	}
-
-	while(1){ // TODO this should really listen for incoming signals, see unix programming book.
+        signal(SIGINT, handle_sigint);
+        g_continue = true;
+	while(g_continue){ // TODO this should really listen for incoming signals, see unix programming book.
 		usleep(100000); // around 10 fps
 		// use this thread to send some feedback
 		//session->update_clients();
-		session->send_osc_feedback();
+                if(g_session) g_session->send_osc_feedback();
 	}
+        delete g_session; // should invoke destructor
+        g_session=0;
+        return 0;
 }

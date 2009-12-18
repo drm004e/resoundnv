@@ -432,11 +432,14 @@ private:
 	pthread_t diskstreamThreadId_;
 	pthread_mutex_t diskstreamThreadLock_;
 	pthread_cond_t  diskstreamThreadReady_;
-
+        bool diskstreamThreadContinue_;
 
 public:
 	/// construct a new session from the xml file specified
 	ResoundSession(CLIOptions options);
+
+        /// destructor
+        ~ResoundSession();
 
 	/// reset everything and load from xml - ideally we do this with a new session object
 	void load_from_xml(const xmlpp::Node* node);
