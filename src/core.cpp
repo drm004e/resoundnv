@@ -52,6 +52,7 @@ Diskstream::Diskstream(const xmlpp::Node* node, ResoundSession* session) :
 		AudioStream(node,session),
 		ringBuffer_(0),
 		diskBuffer_(0),
+		copyBuffer_(0),
 		playing_(true)
 {
 	// diskstream maintains a jack ring buffer and two process functions are called from seperate threads	
@@ -63,6 +64,8 @@ Diskstream::Diskstream(const xmlpp::Node* node, ResoundSession* session) :
 	const xmlpp::Element* nodeElement = dynamic_cast<const xmlpp::Element*>(node);
 	path_ = get_attribute_string(nodeElement,"source");
 	ringBuffer_ = jack_ringbuffer_create(DISK_STREAM_RING_BUFFER_SIZE*sizeof(float));
+	copyBuffer_ = new float[DISK_STREAM_RING_BUFFER_SIZE];
+	memset(copyBuffer_, 0, DISK_STREAM_RING_BUFFER_SIZE * sizeof(float));
 	memset(ringBuffer_->buf, 0, ringBuffer_->size); // clear the buffer
 
 	diskBuffer_ = new float[DISK_STREAM_RING_BUFFER_SIZE]; // TODO de-interleaving, really needs an audio pool to be efficient
@@ -132,7 +135,8 @@ void Diskstream::process(jack_nframes_t nframes){
 	//printf("bytesToRead = %i\n",bytesToRead);
 	size_t rSpace = jack_ringbuffer_read_space (ringBuffer_);
 	if(rSpace >= bytesToRead){
-		size_t bytesRead = jack_ringbuffer_read (ringBuffer_, (char*)get_buffer()->get_buffer(), bytesToRead);
+		size_t bytesRead = jack_ringbuffer_read (ringBuffer_, (char*)copyBuffer_, bytesToRead);
+		ab_copy_with_gain(copyBuffer_, get_buffer()->get_buffer(),nframes, get_gain());
 		//size_t bytesRead = jack_ringbuffer_read (ringBuffer_, (char*)tbuffer, bytesToRead);
 		//TODO gain should be applied here
 		//printf("Buffer read %i bytes, from %i available\n",bytesRead, rSpace);

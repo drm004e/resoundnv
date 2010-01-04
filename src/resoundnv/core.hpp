@@ -45,6 +45,7 @@ class Diskstream : public AudioStream {
 	jack_ringbuffer_t* ringBuffer_; ///< a ring buffer is used to ensure non-locking thread safe read
 	static const size_t DISK_STREAM_RING_BUFFER_SIZE = 4096;
 	float* diskBuffer_;
+	float* copyBuffer_;
 	SNDFILE* file_;
 	SF_INFO info_;
 	std::string path_;
