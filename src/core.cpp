@@ -51,7 +51,8 @@ AudioStream::AudioStream(const xmlpp::Node* node, ResoundSession* session) : Dyn
 Diskstream::Diskstream(const xmlpp::Node* node, ResoundSession* session) : 
 		AudioStream(node,session),
 		ringBuffer_(0),
-		diskBuffer_(0)
+		diskBuffer_(0),
+		playing_(true)
 {
 	// diskstream maintains a jack ring buffer and two process functions are called from seperate threads	
 	// create a ring buffer	
@@ -88,6 +89,9 @@ Diskstream::~Diskstream(){
 void Diskstream::disk_process(){
 	// find out how much space is on the ring buffer available for writing
 	// read that much from disk and copy into ring buffer
+
+	if(!playing_){return;}
+
 	size_t bytesToWrite = jack_ringbuffer_write_space(ringBuffer_);
 	if(bytesToWrite > 4096){
 		bytesToWrite = 1024;
@@ -121,6 +125,9 @@ void Diskstream::process(jack_nframes_t nframes){
 	// The problem here is that this disk stream will now be out of playback sync by a number of samples
 	// we need to skip those on the next buffer, is there any point attempting to get back in sync? we have already glitched
 	//float tbuffer[4096];
+
+	if(!playing_){return;}
+
 	size_t bytesToRead = nframes * sizeof(float);
 	//printf("bytesToRead = %i\n",bytesToRead);
 	size_t rSpace = jack_ringbuffer_read_space (ringBuffer_);
@@ -137,6 +144,19 @@ void Diskstream::process(jack_nframes_t nframes){
 	//avg_signal_in_buffer(tbuffer,nframes);
 	get_vu_meter().analyse_buffer(get_buffer()->get_buffer(),nframes);
 
+}
+
+void Diskstream::seek(size_t pos){
+	sf_seek(file_, pos, SEEK_SET);
+}
+
+void Diskstream::play(){
+	playing_ = true;
+}
+void Diskstream::stop(){
+	playing_ = false;
+	jack_ringbuffer_reset(ringBuffer_);
+	
 }
 
 Livestream::Livestream(const xmlpp::Node* node, ResoundSession* session) : AudioStream(node,session)
@@ -278,7 +298,51 @@ ResoundSession::ResoundSession(CLIOptions options) :
 
 	///activate jack ports cannot be connected until active
 	start();
+
+	// register transport osc parameters
+	add_method("/resound/t1/play","i", ResoundSession::lo_play, this);
+	add_method("/resound/t1/stop","i", ResoundSession::lo_stop, this);
+	add_method("/resound/t1/seek","i", ResoundSession::lo_seek, this);
 }
+
+int ResoundSession::lo_play(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data){
+	ResoundSession* session = static_cast<ResoundSession*>(user_data);
+	session->diskstream_play(); 
+	std::cout << "Playing\n";
+    return 1;
+}
+int ResoundSession::lo_stop(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data){
+	ResoundSession* session = static_cast<ResoundSession*>(user_data);
+	session->diskstream_stop(); 
+	std::cout << "Stopping\n";
+    return 1;
+}
+int ResoundSession::lo_seek(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data){
+	ResoundSession* session = static_cast<ResoundSession*>(user_data);
+	session->diskstream_seek(argv[0]->i); // TODO validation here required
+	std::cout << "Seeking\n";
+    return 1;
+}
+
+/// diskstream play
+void ResoundSession::diskstream_play(){
+	for(unsigned int n = 0; n < diskStreams_.size(); ++n){
+		diskStreams_[n]->play();
+	}
+}
+/// diskstream stop
+void ResoundSession::diskstream_stop(){
+	for(unsigned int n = 0; n < diskStreams_.size(); ++n){
+		diskStreams_[n]->stop();
+	}
+}
+/// diskstream seek
+void ResoundSession::diskstream_seek(size_t pos){
+	for(unsigned int n = 0; n < diskStreams_.size(); ++n){
+		diskStreams_[n]->seek(pos);
+	}
+}
+
 
 ResoundSession::~ResoundSession(){
     printf("Session is closing...\n");

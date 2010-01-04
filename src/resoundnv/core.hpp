@@ -48,6 +48,7 @@ class Diskstream : public AudioStream {
 	SNDFILE* file_;
 	SF_INFO info_;
 	std::string path_;
+	bool playing_;
 public:
 
 	/// construct
@@ -62,6 +63,14 @@ public:
 
 	/// class is expected to make its next buffer of audio ready. read a block from the ringbuffer
 	virtual void process(jack_nframes_t nframes);
+
+	/// method to seek the current disk location, lock thread mutex first!
+	void seek(size_t pos);
+
+	/// start this stream, lock disk thread mutex first!
+	void play();
+	/// stop this stream, lock disk thread mutex first!
+	void stop();
 };
 
 /// a stream - a wrapper around an available input buffer
@@ -193,7 +202,19 @@ public:
 
         /// destructor
         ~ResoundSession();
+private:
+	/// osc callback static
+	static int lo_play(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data);
+	static int lo_stop(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data);
+	static int lo_seek(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data);
 
+	/// diskstream play
+	void diskstream_play();
+	/// diskstream stop
+	void diskstream_stop();
+	/// diskstream seek
+	void diskstream_seek(size_t pos);
+public:
 	/// reset everything and load from xml - ideally we do this with a new session object
 	void load_from_xml(const xmlpp::Node* node);
 
