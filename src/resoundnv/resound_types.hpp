@@ -35,3 +35,17 @@ public:
 	ResoundSession& get_session(){return *session_;}
 };
 
+class ResoundApp {
+private:
+	ResoundApp();
+	~ResoundApp();
+	static ResoundApp* s_singleton;
+	ResoundSession* m_session;
+public:
+	static ResoundApp& get_instance();
+	ResoundSession& get_session(){return *m_session;}
+	void set_session(ResoundSession* session){m_session = session;}
+};
+#define APP() ResoundApp::get_instance()
+#define SESSION() ResoundApp::get_instance().get_session()
+

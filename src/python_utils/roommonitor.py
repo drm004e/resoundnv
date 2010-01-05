@@ -133,7 +133,7 @@ class ResoundXMLParser():
 		oscServer.add_method(None, None, fallback)
 			
 
-g_resound = ResoundXMLParser('../test24.xml')
+g_resound = ResoundXMLParser('../usss-av-rig.xml')
 
 # this is an on idle callback to check osc
 def update_osc():

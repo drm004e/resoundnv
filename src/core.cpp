@@ -39,6 +39,17 @@ DynamicObject::DynamicObject(const xmlpp::Node* node, ResoundSession* session) :
 	session->register_dynamic_object(id_, this);
 }
 
+ResoundApp* ResoundApp::s_singleton = 0; 
+ResoundApp& ResoundApp::get_instance(){
+	if(!s_singleton) s_singleton = new ResoundApp;
+	return *s_singleton;
+}
+ResoundApp::ResoundApp(){
+	m_session = 0;
+}
+ResoundApp::~ResoundApp(){
+}
+
 AudioStream::AudioStream(const xmlpp::Node* node, ResoundSession* session) : DynamicObject(node,session)
 {
 	const xmlpp::Element* nodeElement = get_element(node);
@@ -693,7 +704,8 @@ int main(int argc, char** argv){
 				if(name=="resoundnv"){
 					std::cout << "Resoundnv XML node found, building session.\n";
 					g_session = new ResoundSession(g_options);
-					g_session->load_from_xml(nodeElement);
+					APP().set_session(g_session);
+					SESSION().load_from_xml(nodeElement);
 				}
 			}
 		}
