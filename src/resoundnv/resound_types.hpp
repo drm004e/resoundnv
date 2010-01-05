@@ -26,13 +26,11 @@ class ResoundSession;
 // all xml based objects base to this
 class DynamicObject{
 	ObjectId id_;
-	ResoundSession* session_;
 public:
-	DynamicObject(const xmlpp::Node* node, ResoundSession* session);
+	DynamicObject();
+	virtual void init_from_xml(const xmlpp::Element* nodeElement);
 	virtual ~DynamicObject(){}; 
-
 	const ObjectId& get_id(){return id_;}
-	ResoundSession& get_session(){return *session_;}
 };
 
 class ResoundApp {

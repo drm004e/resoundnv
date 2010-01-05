@@ -29,7 +29,8 @@ class AudioStream : public DynamicObject {
 	VUMeter vuMeter_;
 public:
 
-	AudioStream(const xmlpp::Node* node, ResoundSession* session);
+	AudioStream();
+	void init_from_xml(const xmlpp::Element* nodeElement);
 	/// abstract virtualised dsp call
 	/// class is expected to make its next buffer of audio ready.
 	virtual void process(jack_nframes_t nframes) = 0;
@@ -53,7 +54,8 @@ class Diskstream : public AudioStream {
 public:
 
 	/// construct
-	Diskstream(const xmlpp::Node* node, ResoundSession* session);
+	Diskstream();
+	void init_from_xml(const xmlpp::Element* nodeElement);
 
 	/// destruct
 	virtual ~Diskstream();
@@ -80,8 +82,8 @@ class Livestream : public AudioStream{
 	std::string connectionName_;
 public:
 
-	Livestream(const xmlpp::Node* node, ResoundSession* session);
-
+	Livestream();
+	void init_from_xml(const xmlpp::Element* nodeElement);
 	/// class is expected to make its next buffer of audio ready.
 	virtual void process(jack_nframes_t nframes);
 };
@@ -107,7 +109,8 @@ typedef std::map<ObjectId,Alias*> AliasMap;
 class AliasSet : public DynamicObject {
 	AliasMap aliases_;
 public:
-	AliasSet(const xmlpp::Node* node, ResoundSession* session);
+	AliasSet();
+	void init_from_xml(const xmlpp::Element* nodeElement);
 	/// return an alias by id
 	Alias* get_alias(ObjectId id);
 	/// get a reference to the aliases list
@@ -117,14 +120,16 @@ public:
 /// a Coherent Audio Stream Set
 class CASS : public AliasSet {
 public:
-	CASS(const xmlpp::Node* node, ResoundSession* session);
+	CASS();
+	void init_from_xml(const xmlpp::Element* nodeElement);
 
 };
 
 /// a Coherent Loudspeaker Set
 class CLS : public AliasSet {
 public:
-	CLS(const xmlpp::Node* node, ResoundSession* session);
+	CLS();
+	void init_from_xml(const xmlpp::Element* nodeElement);
 
 };
 
@@ -144,7 +149,8 @@ class Loudspeaker : public DynamicObject{
 protected:
 	VUMeter vuMeter_;
 public:
-	Loudspeaker(const xmlpp::Node* node, ResoundSession* session);
+	Loudspeaker();
+	void init_from_xml(const xmlpp::Element* nodeElement);
 	/// class is expected to make its next buffer of audio ready to be written too.
 	virtual void pre_process(jack_nframes_t nframes);
 	/// buffer should have audio from behaviours in it.. post-process onto jack stream

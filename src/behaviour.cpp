@@ -20,7 +20,7 @@
 #include "resoundnv/behaviour.hpp"
 #include "resoundnv/core.hpp"
 
-BRouteSet::BRouteSet(const xmlpp::Node* node, ResoundSession* session){
+BRouteSet::BRouteSet(const xmlpp::Node* node){
 	// a routeset works a little bit like a collective
 	// it contains any number of routes grouped together
 	std::cout << "Found route set" << std::endl;
@@ -67,8 +67,8 @@ BRouteSet::BRouteSet(const xmlpp::Node* node, ResoundSession* session){
 				bool toIsAlias = from.find('.') != std::string::npos;
 
 				// get the objects they point to
-				DynamicObject* fromObject = session->get_dynamic_object(from);
-				DynamicObject* toObject = session->get_dynamic_object(to);
+				DynamicObject* fromObject = SESSION().get_dynamic_object(from);
+				DynamicObject* toObject = SESSION().get_dynamic_object(to);
 
 				// attempt to cast them to get the type we want
 				AudioStream* audioStream = 0;
@@ -87,7 +87,7 @@ BRouteSet::BRouteSet(const xmlpp::Node* node, ResoundSession* session){
 							ObjectId aliasId = from.substr(from.find('.')+1);
 							// resolve the alias to a stream and set
 							audioStream = dynamic_cast<AudioStream*>(
-											session->get_dynamic_object(cass->get_alias(aliasId)->get_ref())
+											SESSION().get_dynamic_object(cass->get_alias(aliasId)->get_ref())
 										);
 							cass = 0;
 						} else {
@@ -110,7 +110,7 @@ BRouteSet::BRouteSet(const xmlpp::Node* node, ResoundSession* session){
 							ObjectId aliasId = from.substr(from.find('.')+1);
 							// resolve the alias to a stream and set
 							loudspeaker = dynamic_cast<Loudspeaker*>(
-											session->get_dynamic_object(cls->get_alias(aliasId)->get_ref())
+											SESSION().get_dynamic_object(cls->get_alias(aliasId)->get_ref())
 										);
 							cls = 0;
 						} else {
@@ -135,7 +135,7 @@ BRouteSet::BRouteSet(const xmlpp::Node* node, ResoundSession* session){
 					for( AliasMap::const_iterator it = cassAliases.begin();
 							it != cassAliases.end();
 								++it){
-						AudioStream* s = dynamic_cast<AudioStream*>( session->get_dynamic_object(it->second->get_ref()) );
+						AudioStream* s = dynamic_cast<AudioStream*>( SESSION().get_dynamic_object(it->second->get_ref()) );
 						std::cout << "Building route: " << s->get_id() << " -> "<< loudspeaker->get_id() << std::endl;
 						routes_.push_back(BRoute(s->get_buffer(),loudspeaker->get_buffer(), gain ));
 					}
@@ -144,7 +144,7 @@ BRouteSet::BRouteSet(const xmlpp::Node* node, ResoundSession* session){
 					for( AliasMap::const_iterator it = clsAliases.begin();
 							it != clsAliases.end();
 								++it){
-						Loudspeaker* l = dynamic_cast<Loudspeaker*>( session->get_dynamic_object(it->second->get_ref()) );
+						Loudspeaker* l = dynamic_cast<Loudspeaker*>( SESSION().get_dynamic_object(it->second->get_ref()) );
 						std::cout << "Building route: " << audioStream->get_id() << " -> "<< l->get_id() << std::endl;
 						routes_.push_back(BRoute(audioStream->get_buffer(),l->get_buffer(), gain ));
 					}
@@ -153,11 +153,11 @@ BRouteSet::BRouteSet(const xmlpp::Node* node, ResoundSession* session){
 					for( AliasMap::const_iterator it = cassAliases.begin();
 							it != cassAliases.end();
 								++it){
-						AudioStream* s = dynamic_cast<AudioStream*>( session->get_dynamic_object(it->second->get_ref()) );
+						AudioStream* s = dynamic_cast<AudioStream*>( SESSION().get_dynamic_object(it->second->get_ref()) );
 						// for each stream we need to check for a matching alias by requestic one of the same name
 						ObjectId streamAliasId = it->second->get_id();
 						Alias* loudspeakerAlias = cls->get_alias(streamAliasId);
-						Loudspeaker* l = dynamic_cast<Loudspeaker*>( session->get_dynamic_object(loudspeakerAlias->get_ref()) );
+						Loudspeaker* l = dynamic_cast<Loudspeaker*>( SESSION().get_dynamic_object(loudspeakerAlias->get_ref()) );
 						std::cout << "Building route: " << from << "." << streamAliasId << " " << s->get_id()
 														<< " -> "
 														<< to << "." << loudspeakerAlias->get_id() << " " << l->get_id() << std::endl;
@@ -169,14 +169,14 @@ BRouteSet::BRouteSet(const xmlpp::Node* node, ResoundSession* session){
 		}
 	}
 }
-BParam::BParam(const xmlpp::Node* node, ResoundSession* session){
+BParam::BParam(const xmlpp::Node* node){
 	const xmlpp::Element* nodeElement = get_element(node);
 	id_ = get_attribute_string(nodeElement,"id");
 	addr_ = get_attribute_string(nodeElement,"address");
 	value_ = get_optional_attribute_float(nodeElement,"value");
 	std::cout << "Found parameter "<<id_<< " osc address " << addr_ << std::endl;
 	// at this point we should register the parameter address with osc
-	session->add_method(addr_,"f", BParam::lo_cb_params, this);
+	SESSION().add_method(addr_,"f", BParam::lo_cb_params, this);
 }
 
 int BParam::lo_cb_params(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data){
@@ -186,10 +186,11 @@ int BParam::lo_cb_params(const char *path, const char *types, lo_arg **argv, int
     return 1;
 }
 
-Behaviour::Behaviour(const xmlpp::Node* node, ResoundSession* session) : DynamicObject(node,session)
-{
+Behaviour::Behaviour() 
+{}
+
+void Behaviour::init_from_xml(const xmlpp::Element* nodeElement){
 	// setup various osc parameters
-	const xmlpp::Element* nodeElement = get_element(node);
 	xmlpp::Node::NodeList nodes;
 	nodes = nodeElement->get_children();
 	xmlpp::Node::NodeList::iterator it;
@@ -198,7 +199,7 @@ Behaviour::Behaviour(const xmlpp::Node* node, ResoundSession* session) : Dynamic
 		if(child){
 			std::string name = child->get_name();
 			if(name=="param"){
-				BParam* param = new BParam(child,session);
+				BParam* param = new BParam(child);
 				ObjectId id = param->get_id();
 				BParamMap::iterator it = params_.find(id);
 				if(it == params_.end()){
@@ -210,12 +211,13 @@ Behaviour::Behaviour(const xmlpp::Node* node, ResoundSession* session) : Dynamic
 			}
 		}
 	}
+	DynamicObject::init_from_xml(nodeElement);
 }
 
 
-RouteSetBehaviour::RouteSetBehaviour(const xmlpp::Node* node, ResoundSession* session) : Behaviour(node,session) {
+RouteSetBehaviour::RouteSetBehaviour(){}
+void RouteSetBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 	// This class of behaviour uses the routset interpretation for CASS and CLS
-	const xmlpp::Element* nodeElement = get_element(node);
 	xmlpp::Node::NodeList nodes;
 	nodes = nodeElement->get_children();
 	xmlpp::Node::NodeList::iterator it;
@@ -224,17 +226,18 @@ RouteSetBehaviour::RouteSetBehaviour(const xmlpp::Node* node, ResoundSession* se
 		if(child){
 			std::string name = child->get_name();
 			if(name=="routeset"){
-				BRouteSet* routeSet = new BRouteSet(child,session);
+				BRouteSet* routeSet = new BRouteSet(child);
 				routeSets_.push_back(routeSet);
 			}
 		}
 	}
+	Behaviour::init_from_xml(nodeElement);
 }
 
-IOBehaviour::IOBehaviour(const xmlpp::Node* node, ResoundSession* session) : Behaviour(node,session) {
+IOBehaviour::IOBehaviour(){}
+void IOBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 	// TODO Although basic inputs and outputs are created this does not consider cass or cls as groups
 	// This class of behaviour uses the i/o interpretation for CASS and CLS
-	const xmlpp::Element* nodeElement = get_element(node);
 	xmlpp::Node::NodeList nodes;
 	nodes = nodeElement->get_children();
 	xmlpp::Node::NodeList::iterator it;
@@ -244,15 +247,16 @@ IOBehaviour::IOBehaviour(const xmlpp::Node* node, ResoundSession* session) : Beh
 			std::string name = child->get_name();
 			if(name=="input"){
 				ObjectId id = get_attribute_string(child,"ref");
-				AudioStream* stream = session->resolve_audiostream(id);
+				AudioStream* stream = SESSION().resolve_audiostream(id);
 				inputs_.push_back(stream);
 			} else if(name=="output"){
 				ObjectId id = get_attribute_string(child,"ref");
-				Loudspeaker* loudspeaker = session->resolve_loudspeaker(id);
+				Loudspeaker* loudspeaker = SESSION().resolve_loudspeaker(id);
 				outputs_.push_back(loudspeaker);
 			}
 		}
 	}
+	Behaviour::init_from_xml(nodeElement);
 }
 
 void AttBehaviour::process(jack_nframes_t nframes){
@@ -278,8 +282,10 @@ void AttBehaviour::process(jack_nframes_t nframes){
 	//std::cout << "AttBehaviour::process" << std::endl;
 }
 
-MultipointCrossfadeBehaviour::MultipointCrossfadeBehaviour(const xmlpp::Node* node, ResoundSession* session)
-		: RouteSetBehaviour(node,session){
+MultipointCrossfadeBehaviour::MultipointCrossfadeBehaviour(){}
+
+void MultipointCrossfadeBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
+
 	std::cout << "Created MultipointCrossfade routeset behaviour object!" << std::endl;
 	// right much work for this algorithm is based on the concept of scaling, offseting and clipping the range 0 - 1
 	// see pd patch phasor-chase-algorithm.pd
@@ -289,12 +295,16 @@ MultipointCrossfadeBehaviour::MultipointCrossfadeBehaviour(const xmlpp::Node* no
 	// Algorithm uses scales and offsets the position range such that we get a set of 0-1 indexs for each of the routesets
 	// the indexs are used to table lookup into a hanning window function which is then applied modified by apropriate factors.
 
-	position_ = get_parameter_value("position");
-	gain_= get_parameter_value("gain");
-	slope_= get_parameter_value("slope");
+
 
 	hannFunction = LookupTable::create_hann(HANN_TABLE_SIZE);
 
+	RouteSetBehaviour::init_from_xml(nodeElement);	
+
+	position_ = get_parameter_value("position");
+	gain_= get_parameter_value("gain");
+	slope_= get_parameter_value("slope");
+	
 }
 void MultipointCrossfadeBehaviour::process(jack_nframes_t nframes){
 
@@ -338,18 +348,19 @@ void MultipointCrossfadeBehaviour::process(jack_nframes_t nframes){
 	}
 
 }
-ChaseBehaviour::ChaseBehaviour(const xmlpp::Node* node, ResoundSession* session)
-		: RouteSetBehaviour(node,session),
-		  phasor(44100.0f/128.0f,1){
+ChaseBehaviour::ChaseBehaviour() : phasor(44100.0f/128.0f,1){}
+
+void ChaseBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 	std::cout << "Created ChaseBehaviour routeset behaviour object!" << std::endl;
 	// this is based on the multipoint crossfader but uses a phasor to control position
 	hannFunction = LookupTable::create_hann(HANN_TABLE_SIZE);
+
+	RouteSetBehaviour::init_from_xml(nodeElement);
 
 	freq_ = get_parameter_value("freq");
 	phase_ = get_parameter_value("phase");
 	gain_= get_parameter_value("gain");
 	slope_= get_parameter_value("slope");
-
 
 	phasor.set_phase(phase_);
 }
@@ -400,7 +411,12 @@ void ChaseBehaviour::process(jack_nframes_t nframes){
 
 }
 
-AmpPanBehaviour::AmpPanBehaviour(const xmlpp::Node* node, ResoundSession* session) : IOBehaviour(node,session){
+AmpPanBehaviour::AmpPanBehaviour(){}
+
+void AmpPanBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
+
+	IOBehaviour::init_from_xml(nodeElement);
+
 	std::cout << "Created AmpPan io based behaviour object!" << std::endl;
 	pos_.x = get_parameter_value("x");
 	pos_.y = get_parameter_value("y");

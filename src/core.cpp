@@ -28,15 +28,15 @@
 
 
 
-DynamicObject::DynamicObject(const xmlpp::Node* node, ResoundSession* session) :
-	session_(session)
-{
-	assert(session);
-	const xmlpp::Element* nodeElement = get_element(node);
+DynamicObject::DynamicObject(){
+}
+
+void DynamicObject::init_from_xml(const xmlpp::Element* nodeElement){
+	assert(nodeElement);
 	std::string name = nodeElement->get_name();
 	id_ = get_attribute_string(nodeElement,"id");
-	// attempt to regeister
-	session->register_dynamic_object(id_, this);
+	// attempt to register
+	SESSION().register_dynamic_object(id_, this);
 }
 
 ResoundApp* ResoundApp::s_singleton = 0; 
@@ -50,29 +50,31 @@ ResoundApp::ResoundApp(){
 ResoundApp::~ResoundApp(){
 }
 
-AudioStream::AudioStream(const xmlpp::Node* node, ResoundSession* session) : DynamicObject(node,session)
-{
-	const xmlpp::Element* nodeElement = get_element(node);
-	gain_ = get_optional_attribute_float(nodeElement,"gain",1.0f);	
 
-	jack_nframes_t s = session->get_buffer_size();
+AudioStream::AudioStream(){
+}
+void AudioStream::init_from_xml(const xmlpp::Element* nodeElement){	
+	gain_ = get_optional_attribute_float(nodeElement,"gain",1.0f);	
+	jack_nframes_t s = SESSION().get_buffer_size();
 	buffer_.allocate(s);
+	
+	DynamicObject::init_from_xml(nodeElement);
 }
 
-Diskstream::Diskstream(const xmlpp::Node* node, ResoundSession* session) : 
-		AudioStream(node,session),
+Diskstream::Diskstream() :
 		ringBuffer_(0),
 		diskBuffer_(0),
 		copyBuffer_(0),
 		playing_(true)
-{
+{}
+
+void Diskstream::init_from_xml(const xmlpp::Element* nodeElement){	
 	// diskstream maintains a jack ring buffer and two process functions are called from seperate threads	
 	// create a ring buffer	
 	// open the file for reading
 	// check channels and assert mono
 	// read as much as possible into the ring buffer
 
-	const xmlpp::Element* nodeElement = dynamic_cast<const xmlpp::Element*>(node);
 	path_ = get_attribute_string(nodeElement,"source");
 	ringBuffer_ = jack_ringbuffer_create(DISK_STREAM_RING_BUFFER_SIZE*sizeof(float));
 	copyBuffer_ = new float[DISK_STREAM_RING_BUFFER_SIZE];
@@ -91,6 +93,8 @@ Diskstream::Diskstream(const xmlpp::Node* node, ResoundSession* session) :
 	}
 
 	disk_process();
+
+	AudioStream::init_from_xml(nodeElement);
 }
 
 Diskstream::~Diskstream(){
@@ -174,15 +178,17 @@ void Diskstream::stop(){
 	
 }
 
-Livestream::Livestream(const xmlpp::Node* node, ResoundSession* session) : AudioStream(node,session)
-{	
-	// this node will need to establish a jack stream via the jack system, it should kill the port when done
-	const xmlpp::Element* nodeElement = get_element(node);
-	connectionName_ = get_attribute_string(nodeElement,"port");
-	port_ = new JackPort(get_id(), JackPortIsInput ,&get_session());
-	port_->connect(connectionName_);
+Livestream::Livestream(){}
 
-	std::cout << "Livestream " << get_id() << std::endl;
+void Livestream::init_from_xml(const xmlpp::Element* nodeElement){	
+	// this node will need to establish a jack stream via the jack system, it should kill the port when done
+	connectionName_ = get_attribute_string(nodeElement,"port");
+	ObjectId id = get_attribute_string(nodeElement,"id");
+	port_ = new JackPort(id, JackPortIsInput ,&SESSION());
+	port_->connect(connectionName_);
+	std::cout << "Livestream " << id << std::endl;
+
+	AudioStream::init_from_xml(nodeElement);
 }
 void Livestream::process(jack_nframes_t nframes){
 	// copy from jack buffer applying gain
@@ -194,12 +200,14 @@ void Livestream::process(jack_nframes_t nframes){
 	get_vu_meter().analyse_buffer(get_buffer()->get_buffer(),nframes);
 };
 
-Loudspeaker::Loudspeaker(const xmlpp::Node* node, ResoundSession* session) : DynamicObject(node,session)
-{
+Loudspeaker::Loudspeaker(){}
+
+void Loudspeaker::init_from_xml(const xmlpp::Element* nodeElement){
 	// this node will need to establish a jack stream via the jack system, it should kill the port when done
-	const xmlpp::Element* nodeElement = get_element(node);
+
+	ObjectId id = get_attribute_string(nodeElement,"id");
 	connectionName_ = get_attribute_string(nodeElement,"port");
-	port_ = new JackPort(get_id(), JackPortIsOutput ,&get_session());
+	port_ = new JackPort(id, JackPortIsOutput ,&SESSION());
 	port_->connect(connectionName_);
 
 	type_ = get_optional_attribute_string(nodeElement,"type");
@@ -211,10 +219,12 @@ Loudspeaker::Loudspeaker(const xmlpp::Node* node, ResoundSession* session) : Dyn
 	
 	gain_ = get_optional_attribute_float(nodeElement,"gain",1.0);
 
-	std::cout << "Loudspeaker " << get_id() << " type=" << type_ << std::endl;
+	std::cout << "Loudspeaker " << id << " type=" << type_ << std::endl;
 
-	jack_nframes_t s = session->get_buffer_size();
+	jack_nframes_t s = SESSION().get_buffer_size();
 	buffer_.allocate(s);
+
+	DynamicObject::init_from_xml(nodeElement);
 }
 
 
@@ -245,10 +255,11 @@ Alias::Alias(const xmlpp::Node* node){
 	gain_ = get_optional_attribute_float(nodeElement,"gain",1.0f);
 }
 
-AliasSet::AliasSet(const xmlpp::Node* node, ResoundSession* session) : DynamicObject(node,session)
-{
+AliasSet::AliasSet()
+{}
+void AliasSet::init_from_xml(const xmlpp::Element* nodeElement){
+
 	// look for aliases
-	const xmlpp::Element* nodeElement = get_element(node);
 	xmlpp::Node::NodeList nodes;
 	nodes = nodeElement->get_children();
 	xmlpp::Node::NodeList::iterator it;
@@ -270,6 +281,8 @@ AliasSet::AliasSet(const xmlpp::Node* node, ResoundSession* session) : DynamicOb
 		}	
 	}
 //	for( AliasMap::iterator it = aliases_.begin(); it != aliases_.end(); ++it){ }
+
+	DynamicObject::init_from_xml(nodeElement);
 }
 
 Alias* AliasSet::get_alias(ObjectId id){
@@ -281,14 +294,23 @@ Alias* AliasSet::get_alias(ObjectId id){
 	}
 }
 
-CASS::CASS(const xmlpp::Node* node, ResoundSession* session) : AliasSet(node,session)
-{
-	std::cout << "CASS : " << get_id() << std::endl;
+CASS::CASS()
+{}
+
+void CASS::init_from_xml(const xmlpp::Element* nodeElement){
+	ObjectId id = get_attribute_string(nodeElement,"id");
+	std::cout << "Building CASS : " << id << std::endl;
+	AliasSet::init_from_xml(nodeElement);
+	
 }
 
-CLS::CLS(const xmlpp::Node* node, ResoundSession* session) : AliasSet(node,session)
-{
-	std::cout << "CLS : " << get_id() << std::endl;
+CLS::CLS()
+{}
+
+void CLS::init_from_xml(const xmlpp::Element* nodeElement){
+	ObjectId id = get_attribute_string(nodeElement,"id");
+	std::cout << "Building CLS : " << id << std::endl;
+	AliasSet::init_from_xml(nodeElement);
 }
 
 
@@ -391,14 +413,16 @@ void ResoundSession::load_from_xml(const xmlpp::Node* node){
 			const xmlpp::Element* child = dynamic_cast<const xmlpp::Element*>(*it);
 			if(child){
 				std::string name = child->get_name();
+				DynamicObject* p=0;
 				if(name=="diskstream"){
-					new Diskstream(child,this);
+					p = new Diskstream();
 				} else if(name=="livestream"){
-					new Livestream(child,this);
+					p = new Livestream();
 				} else if(name=="loudspeaker"){
-					new Loudspeaker(child,this);
+					p = new Loudspeaker();
 				} else {
 				}
+				if(p) p->init_from_xml(child);
 			}
 		}
 		// stage 2 - build cass and cls objects
@@ -406,13 +430,14 @@ void ResoundSession::load_from_xml(const xmlpp::Node* node){
 			const xmlpp::Element* child = dynamic_cast<const xmlpp::Element*>(*it);
 			if(child){
 				std::string name = child->get_name();
+				DynamicObject* p=0;
 				if(name=="cass"){
-
-					new CASS(child,this);
+					p = new CASS();
 				} else if(name=="cls"){
-					new CLS(child,this);
+					p = new CLS();
 				}else {
 				}
+				if(p) p->init_from_xml(child);
 			}
 		}
 		// stage 3 - build behaviours
@@ -442,7 +467,8 @@ Behaviour* ResoundSession::create_behaviour_from_node(const xmlpp::Node* node){
 	std::string factoryName = get_attribute_string(nodeElement,"class");
 	BehaviourFactoryMap::iterator it = behaviourFactories_.find(factoryName);
 	if(it != behaviourFactories_.end()){
-		Behaviour* p = (it->second)(node,this); // implicity registers the dynamic object
+		Behaviour* p = (it->second)(); // implicity registers the dynamic object
+		p->init_from_xml(nodeElement);
 		return p;
 	} else {
 		throw Exception("factory not found");
@@ -465,6 +491,7 @@ void ResoundSession::register_dynamic_object(ObjectId id, DynamicObject* ob){
 	DynamicObjectMap::iterator it = dynamicObjects_.find(id);
 	if(it == dynamicObjects_.end()){
 		dynamicObjects_[id] = ob;
+		std::cout << "Registered DynamicObject " << id << std::endl;
 	} else {
 		throw Exception("non-unique name for dynamic object in session");
 	}
