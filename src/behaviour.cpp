@@ -365,19 +365,18 @@ void ChaseBehaviour::process(jack_nframes_t nframes){
 	phasor.set_freq(freq_);
 
 	// the chase gets its position from the phasor
-	float p = clip(phasor.get_phase(),0,1) * slope_;
+	float phase = clip(phasor.get_phase(),0,1);
 	phasor.tick();
 
 	gain_= get_parameter_value("gain");
 
 	float f = slope_;
-	// offset factor (1-1/f)/(N-1)*f
-	float offsetFactor = (1.0f - 1.0f/f)/(N-1.0f)*f;
 
 	if(numRoutes > 0){
-		for(int setNum = 0; setNum < numRoutes; ++setNum){
-			float i = zero_outside_bounds( p - offsetFactor * (float)setNum, 0.0f, 1.0f);
-			float routeSetGain = hannFunction->lookup_linear(i * (float)HANN_TABLE_SIZE ) * gain_;
+		float offsetFactor = 1.0f / N;
+		for(int setNum = 0; setNum < numRoutes; ++setNum){	
+			float p = wrap(phase - setNum*offsetFactor) * TWOPI;
+			float routeSetGain = pow(cos(p) * 0.5f + 0.5f,f) * gain_;
 
 			BRouteArray& routes = routeSets[setNum]->get_routes();
 
