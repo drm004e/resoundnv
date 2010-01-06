@@ -20,6 +20,13 @@
 #include "resoundnv/behaviour.hpp"
 #include "resoundnv/core.hpp"
 
+void BRouteSet::create_route(const BufferRef& a, const BufferRef& b, float gain){
+    if( a.isBus ) { throw std::Exception("Route source is not a behaviour output."); }
+    if( b.isBus ) { throw std::Exception("Route destination is not a bus."); }
+    std::cout << "Found route 1 to 1 : " << a.id << " to " << b.id << std::endl;
+    routes_.push_back(BRoute(a.buffer,b.buffer, gain ));
+}
+
 BRouteSet::BRouteSet(const xmlpp::Node* node){
 	// a routeset works a little bit like a collective
 	// it contains any number of routes grouped together
@@ -35,136 +42,44 @@ BRouteSet::BRouteSet(const xmlpp::Node* node){
 			std::string name = child->get_name();
 			if(name=="route"){
 				std::cout << "Found a route" << std::endl;
-				// determine one of four input to output situations:
-				// 1) single to single, simple, create a direct path
-				// 2) set to single, every alias of the set is connected to the single
-				// 3) single to set,oldGains_[o] the single is connected to every alias of the set
-				// 4) set to set, connect matching alias names like for like
-				// 5).... further rules may be added possibly with regex matching
-
-				// get the from and to attributes
-
-				// for each one
-				// check for alias rules (.)
-				// find out what the first part of the id refers to
-				// check to see if its a valid address
-				// if the address is invalid for either 'from' or 'to' then discard the whole route
-				// check for 'from' pointing to stream, cass or cass alias
-				// check for 'to' pointing to loudspeaker, cls or cls alias
-				// left and right group size is available at this point
-				// if cass alias then resolve the alias against the cass
-				// if cls alias then resolve the alias against the cls
-
-				// with the group sizes known then we can go through matching aliases
-
 				// get the from and to attributes
 				ObjectId from = get_attribute_string(child,"from");
 				ObjectId to = get_attribute_string(child,"to");
 				float gain = get_optional_attribute_float(child,"gain");
 
-				//check for alias rules
-				bool fromIsAlias = from.find('.') != std::string::npos;
-				bool toIsAlias = from.find('.') != std::string::npos;
+                                BufferRefVector fromRefs = SESSION().lookup_buffer(from);
+                                BufferRefVector toRefs = SESSION().lookup_buffer(to);
 
-				// get the objects they point to
-				DynamicObject* fromObject = SESSION().get_dynamic_object(from);
-				DynamicObject* toObject = SESSION().get_dynamic_object(to);
+                                int fromSize = fromRefs.size();
+                                int toSize = toRefs.size();
+                                if(fromSize == 0 || toSize==0){
+                                    throw std::Exception("Invalid route.");
+                                }
+                                if(fromSize == 1 && toSize == 1){
+                                    create_route(fromRefs[0], toRefs[0], gain);
+                                } else if (fromSize == 1 && toSize > 1){
+                                    // one to many
+                                    for(int n = 0; n < toSize; ++n){
+                                        create_route(fromRefs[0], toRefs[n], gain);
+                                    }
+                                } else if (fromSize > 1 && toSize == 1){
+                                    // many to one
+                                    for(int n = 0; n < fromSize; ++n){
+                                        create_route(fromRefs[n], toRefs[0], gain);
+                                    }
+                                } else if (fromSize > 1 && toSize > 1){
+                                    // many to many
+                                    for(int n = 0; n < fromSize; ++n){
+                                        ObjectId fromName = fromRefs[n].id.substr(fromRefs[n].find('.'));
+                                        for(int m = 0; m < toSize; ++m){    
+                                            ObjectId toName = toRefs[m].id.substr(toRefs[m].find('.'));
+                                            if(fromName == toName){
+                                                create_route(fromRefs[n], toRefs[m], gain);
+                                            }
+                                        }
+                                    }
+                                }
 
-				// attempt to cast them to get the type we want
-				AudioStream* audioStream = 0;
-				CASS* cass = 0;
-				Loudspeaker* loudspeaker = 0;
-				CLS* cls = 0;
-
-				audioStream = dynamic_cast<AudioStream*>(fromObject);
-				if(audioStream){
-					std::cout << "From AudioStream ";
-				} else {
-					cass = dynamic_cast<CASS*>(fromObject);
-					if(cass){
-						if(fromIsAlias){
-							std::cout << "From CASS alias ";
-							ObjectId aliasId = from.substr(from.find('.')+1);
-							// resolve the alias to a stream and set
-							audioStream = dynamic_cast<AudioStream*>(
-											SESSION().get_dynamic_object(cass->get_alias(aliasId)->get_ref())
-										);
-							cass = 0;
-						} else {
-							std::cout << "From CASS ";
-						}
-					} else {
-						throw Exception("From not a stream or cass object");
-					}
-				}
-
-				// attempt to cast them to get the type we want
-				loudspeaker = dynamic_cast<Loudspeaker*>(toObject);
-				if(loudspeaker){
-					std::cout << "to Loudspeaker" << std::endl;
-				} else {
-					cls = dynamic_cast<CLS*>(toObject);
-					if(cls){
-						if(toIsAlias){
-							std::cout << "to CLS alias" << std::endl;
-							ObjectId aliasId = from.substr(from.find('.')+1);
-							// resolve the alias to a stream and set
-							loudspeaker = dynamic_cast<Loudspeaker*>(
-											SESSION().get_dynamic_object(cls->get_alias(aliasId)->get_ref())
-										);
-							cls = 0;
-						} else {
-							std::cout << "to CLS" << std::endl;
-						}
-					} else {
-						throw Exception("From not a loudspeaker or cls object");
-					}
-				}
-
-				// at this point we have all objects concerned, aliases have been resolved
-				// deal with each of the situations
-				// multiple calls get made to the following
-				// routes_.push_back(Route(from, to));
-
-				if( audioStream && loudspeaker ){
-					std::cout << "Building route: " << audioStream->get_id() << " -> "<< loudspeaker->get_id() << std::endl;
-					routes_.push_back(BRoute(audioStream->get_buffer(),loudspeaker->get_buffer(), gain ));
-
-				} else if ( cass && loudspeaker){
-					const AliasMap& cassAliases = cass->get_aliases();
-					for( AliasMap::const_iterator it = cassAliases.begin();
-							it != cassAliases.end();
-								++it){
-						AudioStream* s = dynamic_cast<AudioStream*>( SESSION().get_dynamic_object(it->second->get_ref()) );
-						std::cout << "Building route: " << s->get_id() << " -> "<< loudspeaker->get_id() << std::endl;
-						routes_.push_back(BRoute(s->get_buffer(),loudspeaker->get_buffer(), gain ));
-					}
-				} else if ( audioStream && cls){
-					const AliasMap& clsAliases = cls->get_aliases();
-					for( AliasMap::const_iterator it = clsAliases.begin();
-							it != clsAliases.end();
-								++it){
-						Loudspeaker* l = dynamic_cast<Loudspeaker*>( SESSION().get_dynamic_object(it->second->get_ref()) );
-						std::cout << "Building route: " << audioStream->get_id() << " -> "<< l->get_id() << std::endl;
-						routes_.push_back(BRoute(audioStream->get_buffer(),l->get_buffer(), gain ));
-					}
-				} else if ( cass && cls){
-					const AliasMap& cassAliases = cass->get_aliases();
-					for( AliasMap::const_iterator it = cassAliases.begin();
-							it != cassAliases.end();
-								++it){
-						AudioStream* s = dynamic_cast<AudioStream*>( SESSION().get_dynamic_object(it->second->get_ref()) );
-						// for each stream we need to check for a matching alias by requestic one of the same name
-						ObjectId streamAliasId = it->second->get_id();
-						Alias* loudspeakerAlias = cls->get_alias(streamAliasId);
-						Loudspeaker* l = dynamic_cast<Loudspeaker*>( SESSION().get_dynamic_object(loudspeakerAlias->get_ref()) );
-						std::cout << "Building route: " << from << "." << streamAliasId << " " << s->get_id()
-														<< " -> "
-														<< to << "." << loudspeakerAlias->get_id() << " " << l->get_id() << std::endl;
-						routes_.push_back(BRoute(s->get_buffer(),l->get_buffer(), gain ));
-					}
-
-				}
 			}
 		}
 	}
@@ -417,8 +332,13 @@ void IOBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 			std::string name = child->get_name();
 			if(name=="input"){
 				ObjectId id = get_attribute_string(child,"ref");
-				AudioStream* stream = SESSION().resolve_audiostream(id);
-				inputs_.push_back(stream);
+				BufferRefVector v = SESSION().lookup_buffer(id);
+                                if(v.size() == 1){
+                                    inputs_.push_back(v[0].buffer);
+                                } else {
+                                    throw Exception("IOBehaviour <input> tags must refer to single buffers");
+                                }
+
 			} else if(name=="output"){
 				ObjectId id = get_attribute_string(child,"ref");
 				Loudspeaker* loudspeaker = SESSION().resolve_loudspeaker(id);
@@ -609,8 +529,8 @@ void AmpPanBehaviour::process(jack_nframes_t nframes){
 	pos_.z = get_parameter_value("z");
 	gain_ = get_parameter_value("gain");
 
-	AudioStreamArray& inputs = get_inputs();
-	float* in = inputs[0]->get_buffer()->get_buffer(); // ignore all others for now
+	BufferArray& inputs = get_inputs();
+	float* in = inputs[0]->get_buffer(); // ignore all others for now
 	LoudspeakerArray& outputs = get_outputs();
 	for(unsigned int o = 0; o < outputs.size(); ++o){
 		Vec3 dPos = pos_ - outputs[o]->get_position();

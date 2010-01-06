@@ -50,6 +50,8 @@ private:
 public:
 	BRouteSet(const xmlpp::Node* node);
 	BRouteArray& get_routes() {return routes_; }
+        /// creates a route from 2 buffer ref structures
+        void create_route(const BufferRef& a, const BufferRef& b, float gain){
 };
 
 // parameters for behaviours
@@ -164,17 +166,17 @@ public:
 /// routing must be entirely handled by the behaviour dsp.
 class IOBehaviour : public Behaviour {
 public:
-	typedef std::vector<AudioStream*> AudioStreamArray;
+	typedef std::vector<AudioBuffer*> BufferArray;
 	typedef std::vector<Loudspeaker*> LoudspeakerArray;
 private:
-	AudioStreamArray inputs_;
+	BufferArray inputs_;
 	LoudspeakerArray outputs_;
 public:
 	IOBehaviour();
 	void init_from_xml(const xmlpp::Element* nodeElement);
 
 	virtual void process(jack_nframes_t nframes) = 0;
-	AudioStreamArray& get_inputs() {return inputs_;}
+	BufferArray& get_inputs() {return inputs_;}
 	LoudspeakerArray& get_outputs() {return outputs_;}
 };
 
