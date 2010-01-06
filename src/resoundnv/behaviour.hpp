@@ -70,10 +70,14 @@ public:
 class Behaviour : public DynamicObject {
 public:
 	typedef std::map<ObjectId,BParam*> BParamMap;
+        typedef std::vector<AudioBuffer*> BufferVector;
+
 private:
 	BParamMap params_;
+        BufferVector buffers_;
 public:
 	Behaviour();
+        virtual ~Behaviour();
 	void init_from_xml(const xmlpp::Element* nodeElement);
 
 	/// abstract virtualised dsp call
@@ -84,6 +88,11 @@ public:
 	/// obtain a parameter value
 	// TODO this should really be some sort of fast lookup table pre-built at the start of dsp.
 	float get_parameter_value(const char* name){ return params_[name]->get_value(); }
+
+        /// create a buffer and register it with the session
+        void create_buffer(ObjectId subId="");
+        /// get a buffer by index
+        AudioBuffer& get_buffer(int n) { return *buffers[n]; }
 };
 
 

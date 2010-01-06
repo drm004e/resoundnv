@@ -94,7 +94,7 @@ class Alias{
 	ObjectId ref_;
 	float gain_;
 public:
-	Alias(const xmlpp::Node* node);
+	Alias(const xmlpp::Node* node, ObjectId parent);
 	ObjectId get_id(){return id_;}
 	ObjectId get_ref(){return ref_;}
 	float get_gain(){return gain_;}
@@ -117,21 +117,7 @@ public:
 	const AliasMap& get_aliases() const { return aliases_; }
 
 };
-/// a Coherent Audio Stream Set
-class CASS : public AliasSet {
-public:
-	CASS();
-	void init_from_xml(const xmlpp::Element* nodeElement);
 
-};
-
-/// a Coherent Loudspeaker Set
-class CLS : public AliasSet {
-public:
-	CLS();
-	void init_from_xml(const xmlpp::Element* nodeElement);
-
-};
 
 /// a loudspeaker object - a wrapper around an available output buffer
 /// contains loudspeaker dsp

@@ -224,6 +224,17 @@ void Loudspeaker::init_from_xml(const xmlpp::Element* nodeElement){
 	jack_nframes_t s = SESSION().get_buffer_size();
 	buffer_.allocate(s);
 
+        // register the buffer
+        BufferRef ref;
+        std::stringstream str;
+        str << "buss." << id;
+        ref.id =  str.str();
+        ref.isAlias = false;
+        ref.isBus = true;
+        ref.creator = id;
+        ref.buffer = &buffer_;
+        SESSION().register_buffer(ref);
+
 	DynamicObject::init_from_xml(nodeElement);
 }
 
@@ -248,17 +259,29 @@ void Loudspeaker::post_process(jack_nframes_t nframes){
 	vuMeter_.analyse_buffer(buffer_.get_buffer(),nframes);
 }
 
-Alias::Alias(const xmlpp::Node* node){
+Alias::Alias(const xmlpp::Node* node, ObjectId parent){
 	const xmlpp::Element* nodeElement = get_element(node);
 	id_= get_attribute_string(nodeElement,"id");
 	ref_= get_attribute_string(nodeElement,"ref");
-	gain_ = get_optional_attribute_float(nodeElement,"gain",1.0f);
+
+        BufferRefVector v = SESSION().lookup_buffer(ref_);
+        if(v.size() == 1){
+            BufferRef bref = v[0];
+            bref.id = id_;
+            bref.isAlias = true;
+            bref.creator = parent + std::string(".") + id_;
+            SESSION().register_buffer(bref);
+        } else {
+            throw Exception("Alias could not find a reference to the buffer requested.");
+        }
+        
 }
 
 AliasSet::AliasSet()
 {}
 void AliasSet::init_from_xml(const xmlpp::Element* nodeElement){
 
+        ObjectId id = get_attribute_string(nodeElement,"id");
 	// look for aliases
 	xmlpp::Node::NodeList nodes;
 	nodes = nodeElement->get_children();
@@ -268,7 +291,7 @@ void AliasSet::init_from_xml(const xmlpp::Element* nodeElement){
 		if(child){
 			std::string name = child->get_name();
 			if(name=="alias"){
-				Alias* alias = new Alias(child);
+				Alias* alias = new Alias(child,id);
 				ObjectId id = alias->get_id();
 				AliasMap::iterator it = aliases_.find(id);
 				if(it == aliases_.end()){
@@ -293,26 +316,6 @@ Alias* AliasSet::get_alias(ObjectId id){
 		throw Exception((std::string("Alias not found : ") + id).c_str());
 	}
 }
-
-CASS::CASS()
-{}
-
-void CASS::init_from_xml(const xmlpp::Element* nodeElement){
-	ObjectId id = get_attribute_string(nodeElement,"id");
-	std::cout << "Building CASS : " << id << std::endl;
-	AliasSet::init_from_xml(nodeElement);
-	
-}
-
-CLS::CLS()
-{}
-
-void CLS::init_from_xml(const xmlpp::Element* nodeElement){
-	ObjectId id = get_attribute_string(nodeElement,"id");
-	std::cout << "Building CLS : " << id << std::endl;
-	AliasSet::init_from_xml(nodeElement);
-}
-
 
 ResoundSession::ResoundSession(CLIOptions options) : 
 		Resound::OSCManager(options.oscPort_.c_str()),
@@ -402,13 +405,12 @@ void ResoundSession::load_from_xml(const xmlpp::Node* node){
 	const xmlpp::Element* nodeElement = dynamic_cast<const xmlpp::Element*>(node);
 	if(nodeElement)
 	{	
-		// The construction must occur in stages because
-		// certain elements need to be in place for others to refer to them.	
+		// The construction relies on the xml being ordered correctly
+                // you can't refer to objects that have not yet been defined.
 		xmlpp::Node::NodeList nodes;
 		nodes = nodeElement->get_children();
 		xmlpp::Node::NodeList::iterator it;
 
-		// stage 1 - build streams and loudspeakers
 		for(it = nodes.begin(); it != nodes.end(); ++it){
 			const xmlpp::Element* child = dynamic_cast<const xmlpp::Element*>(*it);
 			if(child){
@@ -420,37 +422,16 @@ void ResoundSession::load_from_xml(const xmlpp::Node* node){
 					p = new Livestream();
 				} else if(name=="loudspeaker"){
 					p = new Loudspeaker();
-				} else {
+				} else if(name=="set"){
+					p = new AliasSet();
+				} else if(name=="behaviour"){
+					p = create_behaviour_from_node(child);
 				}
+                               
 				if(p) p->init_from_xml(child);
 			}
 		}
-		// stage 2 - build cass and cls objects
-		for(it = nodes.begin(); it != nodes.end(); ++it){
-			const xmlpp::Element* child = dynamic_cast<const xmlpp::Element*>(*it);
-			if(child){
-				std::string name = child->get_name();
-				DynamicObject* p=0;
-				if(name=="cass"){
-					p = new CASS();
-				} else if(name=="cls"){
-					p = new CLS();
-				}else {
-				}
-				if(p) p->init_from_xml(child);
-			}
-		}
-		// stage 3 - build behaviours
-		for(it = nodes.begin(); it != nodes.end(); ++it){
-			const xmlpp::Element* child = dynamic_cast<const xmlpp::Element*>(*it);
-			if(child){
-				std::string name = child->get_name();
-				if(name=="behaviour"){
-					create_behaviour_from_node(child);
-				} else {
-				}
-			}
-		}
+
 	}
 	// now loaded so sort out the fast lookup object tables
 	build_dsp_object_lookups();
@@ -468,7 +449,6 @@ Behaviour* ResoundSession::create_behaviour_from_node(const xmlpp::Node* node){
 	BehaviourFactoryMap::iterator it = behaviourFactories_.find(factoryName);
 	if(it != behaviourFactories_.end()){
 		Behaviour* p = (it->second)(); // implicity registers the dynamic object
-		p->init_from_xml(nodeElement);
 		return p;
 	} else {
 		throw Exception("factory not found");

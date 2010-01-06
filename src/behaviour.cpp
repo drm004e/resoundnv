@@ -188,6 +188,11 @@ int BParam::lo_cb_params(const char *path, const char *types, lo_arg **argv, int
 
 Behaviour::Behaviour() 
 {}
+Behaviour::~Behaviour(){
+    for(int n = 0; n < buffers_.size(); ++n){
+        delete buffers_[n];
+    }
+}
 
 void Behaviour::init_from_xml(const xmlpp::Element* nodeElement){
 	// setup various osc parameters
@@ -212,6 +217,27 @@ void Behaviour::init_from_xml(const xmlpp::Element* nodeElement){
 		}
 	}
 	DynamicObject::init_from_xml(nodeElement);
+}
+
+void Behaviour::create_buffer(ObjectId subId){
+    AudioBuffer* b = new AudioBuffer();
+    jack_nframes_t s = SESSION().get_buffer_size();
+    b->allocate(s);
+    BufferRef ref;
+    std::stringstream str;
+    if(subId != ""){
+        str << get_id() << "." << subId;
+    } else {
+        str << get_id() << "." << buffers.size();
+    }
+    ref.id =  str.str();
+    ref.isAlias = false;
+    ref.isBus = false;
+    ref.creator = get_id();
+    ref.buffer = b;
+    SESSION().register_buffer(ref);
+    buffers_.push_back(b);
+    
 }
 
 
