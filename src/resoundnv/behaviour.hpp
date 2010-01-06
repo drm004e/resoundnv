@@ -51,7 +51,7 @@ public:
 	BRouteSet(const xmlpp::Node* node);
 	BRouteArray& get_routes() {return routes_; }
         /// creates a route from 2 buffer ref structures
-        void create_route(const BufferRef& a, const BufferRef& b, float gain){
+        void create_route(const BufferRef& a, const BufferRef& b, float gain);
 };
 
 // parameters for behaviours
@@ -94,7 +94,7 @@ public:
         /// create a buffer and register it with the session
         void create_buffer(ObjectId subId="");
         /// get a buffer by index
-        AudioBuffer& get_buffer(int n) { return *buffers[n]; }
+        AudioBuffer& get_buffer(int n) { return *buffers_[n]; }
 };
 
 /// a stream - a wrapper around an available input buffer
@@ -107,6 +107,7 @@ class Diskstream : public Behaviour {
 	SF_INFO info_;
 	std::string path_;
 	bool playing_;
+        float gain_;
 public:
 
 	/// construct

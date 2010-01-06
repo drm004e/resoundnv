@@ -22,6 +22,18 @@
 
 typedef std::string ObjectId;
 
+/// a reference to a buffer
+struct BufferRef{
+public:
+    ObjectId id;
+    AudioBuffer* buffer;
+    bool isBus;
+    bool isAlias;
+    ObjectId creator;
+};
+typedef std::map<ObjectId,BufferRef> BufferRefMap;
+typedef std::vector<BufferRef> BufferRefVector;
+
 class ResoundSession;
 
 // all xml based objects base to this

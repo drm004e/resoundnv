@@ -347,7 +347,7 @@ Loudspeaker* ResoundSession::resolve_loudspeaker(ObjectId id){
 	// get the base objects they point to
 	
 	//check for alias rules
-	ObjectId left = s.substr(0,s.find('.'));
+	ObjectId left = id.substr(0,id.find('.'));
         DynamicObject* ob = get_dynamic_object(left);
 	// attempt to cast them to get the type we want
 	Loudspeaker* loudspeaker = 0;

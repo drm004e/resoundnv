@@ -21,8 +21,8 @@
 #include "resoundnv/core.hpp"
 
 void BRouteSet::create_route(const BufferRef& a, const BufferRef& b, float gain){
-    if( a.isBus ) { throw std::Exception("Route source is not a behaviour output."); }
-    if( b.isBus ) { throw std::Exception("Route destination is not a bus."); }
+    if( a.isBus ) { throw Exception("Route source is not a behaviour output."); }
+    if( b.isBus ) { throw Exception("Route destination is not a bus."); }
     std::cout << "Found route 1 to 1 : " << a.id << " to " << b.id << std::endl;
     routes_.push_back(BRoute(a.buffer,b.buffer, gain ));
 }
@@ -53,7 +53,7 @@ BRouteSet::BRouteSet(const xmlpp::Node* node){
                                 int fromSize = fromRefs.size();
                                 int toSize = toRefs.size();
                                 if(fromSize == 0 || toSize==0){
-                                    throw std::Exception("Invalid route.");
+                                    throw Exception("Invalid route.");
                                 }
                                 if(fromSize == 1 && toSize == 1){
                                     create_route(fromRefs[0], toRefs[0], gain);
@@ -70,9 +70,9 @@ BRouteSet::BRouteSet(const xmlpp::Node* node){
                                 } else if (fromSize > 1 && toSize > 1){
                                     // many to many
                                     for(int n = 0; n < fromSize; ++n){
-                                        ObjectId fromName = fromRefs[n].id.substr(fromRefs[n].find('.'));
+                                        ObjectId fromName = fromRefs[n].id.substr(fromRefs[n].id.find('.'));
                                         for(int m = 0; m < toSize; ++m){    
-                                            ObjectId toName = toRefs[m].id.substr(toRefs[m].find('.'));
+                                            ObjectId toName = toRefs[m].id.substr(toRefs[m].id.find('.'));
                                             if(fromName == toName){
                                                 create_route(fromRefs[n], toRefs[m], gain);
                                             }
@@ -143,7 +143,7 @@ void Behaviour::create_buffer(ObjectId subId){
     if(subId != ""){
         str << get_id() << "." << subId;
     } else {
-        str << get_id() << "." << buffers.size();
+        str << get_id() << "." << buffers_.size();
     }
     ref.id =  str.str();
     ref.isAlias = false;
@@ -171,6 +171,8 @@ void Diskstream::init_from_xml(const xmlpp::Element* nodeElement){
 	// read as much as possible into the ring buffer
 
 	path_ = get_attribute_string(nodeElement,"source");
+        gain_ = get_optional_attribute_float(nodeElement,"gain", 1.0);
+
 	ringBuffer_ = jack_ringbuffer_create(DISK_STREAM_RING_BUFFER_SIZE*sizeof(float));
 	copyBuffer_ = new float[DISK_STREAM_RING_BUFFER_SIZE];
 	memset(copyBuffer_, 0, DISK_STREAM_RING_BUFFER_SIZE * sizeof(float));
@@ -248,7 +250,7 @@ void Diskstream::process(jack_nframes_t nframes){
 	size_t rSpace = jack_ringbuffer_read_space (ringBuffer_);
 	if(rSpace >= bytesToRead){
 		size_t bytesRead = jack_ringbuffer_read (ringBuffer_, (char*)copyBuffer_, bytesToRead);
-		ab_copy_with_gain(copyBuffer_, get_buffer(0).get_buffer(),nframes, get_gain());
+		ab_copy_with_gain(copyBuffer_, get_buffer(0).get_buffer(),nframes, gain_);
 		//size_t bytesRead = jack_ringbuffer_read (ringBuffer_, (char*)tbuffer, bytesToRead);
 		//TODO gain should be applied here
 		//printf("Buffer read %i bytes, from %i available\n",bytesRead, rSpace);
@@ -258,7 +260,7 @@ void Diskstream::process(jack_nframes_t nframes){
 	}
 	//avg_signal_in_buffer(get_buffer()->get_buffer(),nframes);
 	//avg_signal_in_buffer(tbuffer,nframes);
-	get_vu_meter().analyse_buffer(get_buffer(0).get_buffer(),nframes);
+	//get_vu_meter().analyse_buffer(get_buffer(0).get_buffer(),nframes);
 
 }
 
@@ -296,7 +298,7 @@ void Livestream::process(jack_nframes_t nframes){
 	//avg_signal_in_buffer(get_buffer()->get_buffer(),nframes); // sound tested here
 
 	//TODO optional vumetering
-	get_vu_meter().analyse_buffer(get_buffer(0).get_buffer(),nframes);
+	//get_vu_meter().analyse_buffer(get_buffer(0).get_buffer(),nframes);
 };
 // --------------------------------------
 

@@ -91,18 +91,6 @@ struct CLIOptions{
 	std::string oscPort_;
 };
 
-/// a reference to a buffer
-struct BufferRef{
-public:
-    ObjectId id;
-    AudioBuffer* buffer;
-    bool isBus;
-    bool isAlias;
-    ObjectId creator;
-};
-typedef std::map<ObjectId,BufferRef> BufferRefMap;
-typedef std::vector<BufferRef> BufferRefVector;
-
 /// a resound session will read a single xml file and register all jack and disk streams
 class ResoundSession : public JackEngine, public Resound::OSCManager{
 private:

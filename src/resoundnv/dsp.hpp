@@ -42,6 +42,8 @@ public:
 
 };
 
+// operations on buffers
+
 void ab_copy(const float* src, float* dest, size_t N );
 void ab_copy_with_gain(const float* src, float* dest, size_t N, float gain);
 void ab_sum_with_gain(const float* src, float* dest, size_t N, float gain);
