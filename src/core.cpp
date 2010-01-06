@@ -185,6 +185,7 @@ ResoundSession::ResoundSession(CLIOptions options) :
 	register_behaviour_factory("mpc", MultipointCrossfadeBehaviour::factory);
 	register_behaviour_factory("chase", ChaseBehaviour::factory);
 	register_behaviour_factory("amppan", AmpPanBehaviour::factory);
+        register_behaviour_factory("gain", GainInsertBehaviour::factory);
 
 	register_behaviour_factory("minimal", MinimalRouteSetBehaviour::factory);
 	register_behaviour_factory("iobehaviour", MinimalIOBehaviour::factory); // for now

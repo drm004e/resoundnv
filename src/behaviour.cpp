@@ -545,3 +545,34 @@ void AmpPanBehaviour::process(jack_nframes_t nframes){
 		oldGains_[o] = gCoef;
 	}
 }
+
+
+GainInsertBehaviour::GainInsertBehaviour(){}
+
+void GainInsertBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
+
+	IOBehaviour::init_from_xml(nodeElement);
+	std::cout << "Created Example IO Behaviour " << std::endl;
+	gain_ = get_parameter_value("gain");
+
+        int chans = get_inputs().size();
+	assert(chans > 0);
+        for(int n = 0; n < chans; ++n){
+            create_buffer();
+        }
+}
+
+void GainInsertBehaviour::process(jack_nframes_t nframes){
+	gain_ = get_parameter_value("gain");
+       
+        BufferArray& inputs = get_inputs();
+        int chans = inputs.size();
+        for(int chan = 0; chan < chans; ++chan){
+           
+            float* in = inputs[0]->get_buffer(); // ignore all others for now
+            float* out = get_buffer(chan).get_buffer();
+            ab_copy_with_gain(in, out, nframes, gain_);
+        }
+}
+
+
