@@ -11,9 +11,11 @@ import gobject
 import gtk.gtkgl
 from OpenGL.GL import *
 from OpenGL.GLU import *
+from OpenGL.GLUT import *
 import xml.dom.minidom as minidom
 import liblo
 import math
+import getopt
 
 
 
@@ -39,8 +41,10 @@ liblo.send(target, "/syn", 8005)
 def draw_floor(x,z):
 	x=x*0.5
 	z=z*0.5
+	# this would be better as a grid because the gllighting works better
 	glBegin(GL_QUADS)
 	glColor3f(0.3,0.3,0.3)
+	glNormal3f( 0, 1, 0)
 	glVertex3f( x, 0,-z)
 	glVertex3f(-x, 0,-z)
 	glVertex3f(-x, 0, z)
@@ -52,37 +56,38 @@ def draw_box(x,y,z):
 	y=y*.5
 	z=z*.5
 	glBegin(GL_QUADS)
-	glColor3f(0.0,1.0,0.0)
+
+	glNormal3f( 0, 1, 0)
 	glVertex3f( x, y,-z)
 	glVertex3f(-x, y,-z)
 	glVertex3f(-x, y, z)
 	glVertex3f( x, y, z)
 
-	glColor3f(1.0,0.5,0.0)
+	glNormal3f( 0, -1, 0)
 	glVertex3f( x,-y, z)
 	glVertex3f(-x,-y, z)
 	glVertex3f(-x,-y,-z)
 	glVertex3f( x,-y,-z)
 
-	glColor3f(1.0,0.0,0.0)
+	glNormal3f( 0, 0, 1)
 	glVertex3f( x, y, z)
 	glVertex3f(-x, y, z)
 	glVertex3f(-x,-y, z)
 	glVertex3f( x,-y, z)
 
-	glColor3f(1.0,1.0,0.0)
+	glNormal3f( 0, 0, -1)
 	glVertex3f( x,-y,-z)
 	glVertex3f(-x,-y,-z)
 	glVertex3f(-x, y,-z)
 	glVertex3f( x, y,-z)
 
-	glColor3f(0.0,0.0,1.0)
+	glNormal3f( -1, 0, 1)
 	glVertex3f(-x, y, z)
 	glVertex3f(-x, y,-z)
 	glVertex3f(-x,-y,-z)
 	glVertex3f(-x,-y, z)
 
-	glColor3f(1.0,0.0,1.0)
+	glNormal3f( 1, 0, 1)
 	glVertex3f( x, y,-z)
 	glVertex3f( x, y, z)	
 	glVertex3f( x,-y, z)		
@@ -114,7 +119,26 @@ class Loudspeaker():
 		self.peak = 0.0
 		self.rms = 0.0
 		self.margin = 0.0
+		# speaker dimensions from genelec 1029
+		self.height = 0.247
+		self.width = 0.151
+		self.depth = 0.191
 		oscServer.add_method("/"+self.id, 'fff', handle_osc_vu, self)
+
+	def render(self):
+		try:
+			glTranslate(self.x,self.y,self.z)
+			glColor3f(0.2,0.2,0.2)
+			#if self.peak >= 0.8: glColor3f(1.0,0.2,0.2) #  	ffa500 - orange
+			#if self.peak >= 1: glColor3f(1,0,0) #
+			draw_box(self.width + self.rms, self.height + self.peak,self.depth)
+			glColor4f(0,1,0,0.1)
+			glutSolidSphere(self.rms+0.3,10,10)
+		except: 
+			print "Render error"
+			# careful here because the gl library throw exceptions
+			# we have to catch them else the glPushMatrix causes a stack overflow
+		
 
 class ResoundXMLParser():
 	def __init__(self, path):
@@ -133,7 +157,7 @@ class ResoundXMLParser():
 		oscServer.add_method(None, None, fallback)
 			
 
-g_resound = ResoundXMLParser('../usss-av-rig.xml')
+global g_resound;
 
 # this is an on idle callback to check osc
 def update_osc():
@@ -156,7 +180,10 @@ class GLDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
 	def _on_realize(self, *args):
 		glwidget = self.get_gl_drawable()
 		glcontext = self.get_gl_context()
-
+		glutInit()
+		# enable alpha blending, not that nice though beacuse we should draw in a certain order
+		glEnable (GL_BLEND);
+		glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		if not glwidget.gl_begin(glcontext):
 			return
 
@@ -165,9 +192,14 @@ class GLDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
 
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse)
 		glLightfv(GL_LIGHT0, GL_POSITION, light_position)
+		#glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.01);
 
-		#glEnable(GL_LIGHTING)
-		#glEnable(GL_LIGHT0)
+		glEnable(GL_COLOR_MATERIAL)
+		# set material properties which will be assigned by glColor
+		glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE)
+
+		glEnable(GL_LIGHTING)
+		glEnable(GL_LIGHT0)
 		glEnable(GL_DEPTH_TEST)
 
 		glClearColor(0.8, 0.8, 0.8, 1.0)
@@ -205,14 +237,24 @@ class GLDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
 		self.phasor += 0.005
 		if self.phasor >= 1.0 : self.phasor = 0.0
 
-		gluLookAt(math.sin(self.phasor * 2.0 * math.pi) * 10, 5.0, math.cos(self.phasor * 2.0 * math.pi) * 10,  0.0, 1.0, 0.0,  0.0, 1.0, 0.0)
+		gluLookAt(math.sin(self.phasor * 2.0 * math.pi) * 10, 5.0, math.cos(self.phasor * 2.0 * math.pi) * 10,  0.0, 0.0, 0.0,  0.0, 1.0, 0.0)
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+		# must reposition the light here so it is affected by the viewing transform
+		light_diffuse = [1.0, 1.0, 1.0, 1.0]
+		light_position = [0.0, 5.0, 0.0, 1.0]
+
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse)
+		glLightfv(GL_LIGHT0, GL_POSITION, light_position)
+
+		glDisable(GL_LIGHTING)
 		draw_floor(10,10)
+		glEnable(GL_LIGHTING)
+
 		for l in g_resound.loudspeakers:
 			glPushMatrix()
-			glTranslate(l.x,l.y,l.z)
-			draw_box(0.4 + l.rms, 0.4 + l.peak,0.4)
+			l.render()
 			glPopMatrix()
 
 		if glwidget.is_double_buffered():
@@ -249,7 +291,32 @@ class RoomSchematic(gtk.Window):
 		vbox.pack_start(drawing_area)
 
 class _Main(object):
+	def usage():
+		print "Loads a server monitoring application with visualisation.\n Usage:\nroommonitor.py --input=resoundfile.xml"
 	def __init__(self, app):
+		try:
+			opts, args = getopt.getopt(sys.argv[1:], "hi:v", ["help", "input="])
+		except getopt.GetoptError, err:
+			print str(err) # print option errors
+			self.usage()
+			sys.exit(2)
+		output = None
+		verbose = False
+		for o, a in opts:
+			if o == "-v":
+				verbose = True
+			elif o in ("-h", "--help"):
+				self.usage()
+				sys.exit()
+			elif o in ("-i", "--input"):
+				if a=="":
+					self.usage()
+					sys.exit()
+				self.path=a
+			else:
+				assert False, "unhandled option"
+		global g_resound
+		g_resound = ResoundXMLParser(self.path)
 		self.app = app
 
 	def run(self):
