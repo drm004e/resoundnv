@@ -22,71 +22,7 @@
 #include "resound_types.hpp"
 #include "behaviour.hpp"
 
-/// a stream - a wrapper around an available input buffer
-class AudioStream : public DynamicObject {
-	AudioBuffer buffer_;
-	float gain_;
-	VUMeter vuMeter_;
-public:
 
-	AudioStream();
-	void init_from_xml(const xmlpp::Element* nodeElement);
-	/// abstract virtualised dsp call
-	/// class is expected to make its next buffer of audio ready.
-	virtual void process(jack_nframes_t nframes) = 0;
-	// gain setting optional from xml
-	float get_gain(){return gain_;}
-	AudioBuffer* get_buffer(){return &buffer_;}
-	VUMeter& get_vu_meter(){return vuMeter_;}
-
-};
-
-/// a stream - a wrapper around an available input buffer
-class Diskstream : public AudioStream {
-	jack_ringbuffer_t* ringBuffer_; ///< a ring buffer is used to ensure non-locking thread safe read
-	static const size_t DISK_STREAM_RING_BUFFER_SIZE = 4096;
-	float* diskBuffer_;
-	float* copyBuffer_;
-	SNDFILE* file_;
-	SF_INFO info_;
-	std::string path_;
-	bool playing_;
-public:
-
-	/// construct
-	Diskstream();
-	void init_from_xml(const xmlpp::Element* nodeElement);
-
-	/// destruct
-	virtual ~Diskstream();
-
-	/// class is expected to pull as much data as it can from disk into the ring buffer
-	/// this is called from a disk reading thread
-	virtual void disk_process();
-
-	/// class is expected to make its next buffer of audio ready. read a block from the ringbuffer
-	virtual void process(jack_nframes_t nframes);
-
-	/// method to seek the current disk location, lock thread mutex first!
-	void seek(size_t pos);
-
-	/// start this stream, lock disk thread mutex first!
-	void play();
-	/// stop this stream, lock disk thread mutex first!
-	void stop();
-};
-
-/// a stream - a wrapper around an available input buffer
-class Livestream : public AudioStream{
-	JackPort* port_;
-	std::string connectionName_;
-public:
-
-	Livestream();
-	void init_from_xml(const xmlpp::Element* nodeElement);
-	/// class is expected to make its next buffer of audio ready.
-	virtual void process(jack_nframes_t nframes);
-};
 
 // aliases are used to store information from cass and cls alias nodes
 class Alias{
