@@ -15,10 +15,13 @@
 
 #include "resound_exception.hpp"
 #include "dsp.hpp"
+
 #include "math3d.hpp"
 #include "jackengine.hpp"
 #include "oscmanager.hpp"
 #include "xmlhelpers.hpp"
+
+#include "ladspahost.hpp"
 
 typedef std::string ObjectId;
 

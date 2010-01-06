@@ -174,6 +174,9 @@ ResoundSession::ResoundSession(CLIOptions options) :
 		Resound::OSCManager(options.oscPort_.c_str()),
 		options_(options) {
 
+	// setup ladspa hosting
+	ladspaHost = new LadspaHost();
+
 	// diskstream threads
 	pthread_mutex_init (&diskstreamThreadLock_, NULL);
 	pthread_cond_init(&diskstreamThreadReady_, NULL);

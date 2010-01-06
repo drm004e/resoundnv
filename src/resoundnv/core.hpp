@@ -126,6 +126,9 @@ private:
 	pthread_cond_t  diskstreamThreadReady_;
         bool diskstreamThreadContinue_;
 
+
+	LadspaHost* ladspaHost;
+
 public:
 	/// construct a new session from the xml file specified
 	ResoundSession(CLIOptions options);
@@ -183,6 +186,10 @@ public:
 
         /// lookup_buffer
         BufferRefVector lookup_buffer(ObjectId id);
+
+	/// get the ladsdpa descriptor manager
+	LadspaHost& get_ladspa_host(){return *ladspaHost;}
+
 private:
 	/// check disk input buffers are full and cause a load if they are not
 	/// called by the disk input thread, syncronised by the process thread.
