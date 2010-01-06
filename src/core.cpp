@@ -178,6 +178,8 @@ ResoundSession::ResoundSession(CLIOptions options) :
 	pthread_cond_init(&diskstreamThreadReady_, NULL);
 
 	// registering some factories
+        register_behaviour_factory("diskstream", Diskstream::factory);
+	register_behaviour_factory("livestream", Livestream::factory);
 	register_behaviour_factory("att", AttBehaviour::factory);
 	register_behaviour_factory("mpc", MultipointCrossfadeBehaviour::factory);
 	register_behaviour_factory("chase", ChaseBehaviour::factory);
@@ -268,11 +270,7 @@ void ResoundSession::load_from_xml(const xmlpp::Node* node){
 			if(child){
 				std::string name = child->get_name();
 				DynamicObject* p=0;
-				if(name=="diskstream"){
-					p = new Diskstream();
-				} else if(name=="livestream"){
-					p = new Livestream();
-				} else if(name=="loudspeaker"){
+				if(name=="loudspeaker"){
 					p = new Loudspeaker();
 				} else if(name=="set"){
 					p = new AliasSet();
@@ -343,58 +341,19 @@ DynamicObject* ResoundSession::get_dynamic_object(ObjectId id){
 	}
 }
 
-AudioStream* ResoundSession::resolve_audiostream(ObjectId id){
-	// get the base objects they point to
-	DynamicObject* ob = get_dynamic_object(id);
-	//check for alias rules
-	bool isAlias = id.find('.') != std::string::npos;
-	// attempt to cast them to get the type we want
-	AudioStream* audioStream = 0;
-	CASS* cass = 0;
-	
-	audioStream = dynamic_cast<AudioStream*>(ob);
-	if(audioStream){
-		return audioStream;
-	} else {
-		cass = dynamic_cast<CASS*>(ob);
-		if(cass && isAlias){
-			ObjectId aliasId = id.substr(id.find('.')+1);
-			// resolve the alias to a stream and set
-			audioStream = dynamic_cast<AudioStream*>(
-							get_dynamic_object(cass->get_alias(aliasId)->get_ref())
-						);
-			if(audioStream) {
-				return audioStream;
-			}
-		}
-	}
-	throw Exception("Could not resolve to audio stream");
-}
+
 
 Loudspeaker* ResoundSession::resolve_loudspeaker(ObjectId id){
 	// get the base objects they point to
-	DynamicObject* ob = get_dynamic_object(id);
+	
 	//check for alias rules
-	bool isAlias = id.find('.') != std::string::npos;
+	ObjectId left = s.substr(0,s.find('.'));
+        DynamicObject* ob = get_dynamic_object(left);
 	// attempt to cast them to get the type we want
 	Loudspeaker* loudspeaker = 0;
-	CLS* cls = 0;
-	
 	loudspeaker = dynamic_cast<Loudspeaker*>(ob);
 	if(loudspeaker){
 		return loudspeaker;
-	} else {
-		cls = dynamic_cast<CLS*>(ob);
-		if(cls && isAlias){
-			ObjectId aliasId = id.substr(id.find('.')+1);
-			// resolve the alias to a stream and set
-			loudspeaker = dynamic_cast<Loudspeaker*>(
-							get_dynamic_object(cls->get_alias(aliasId)->get_ref())
-						);
-			if(loudspeaker) {
-				return loudspeaker;
-			}
-		}
 	}
 	throw Exception("Could not resolve to loudspeaker");
 }
@@ -404,18 +363,14 @@ Loudspeaker* ResoundSession::resolve_loudspeaker(ObjectId id){
 void ResoundSession::build_dsp_object_lookups(){
 	
 	// TODO Lock dsp mutex here, this thread should wait for the dsp thread
-
-	audioStreams_.clear();
 	loudspeakers_.clear();
 	behaviours_.clear();
 
 	DynamicObjectMap::iterator it = dynamicObjects_.begin();
 	for(;it != dynamicObjects_.end(); ++it){
-		AudioStream* stream = dynamic_cast<AudioStream*>( it->second );
 		Diskstream* diskstream = dynamic_cast<Diskstream*>( it->second );
 		Loudspeaker* loudspeaker = dynamic_cast<Loudspeaker*>( it->second );
 		Behaviour* behaviour = dynamic_cast<Behaviour*>( it->second );
-		if(stream) { audioStreams_.push_back(stream); }
 		if(diskstream) { diskStreams_.push_back(diskstream); }
 		if(loudspeaker) { loudspeakers_.push_back(loudspeaker); }
 		if(behaviour) { behaviours_.push_back(behaviour); }
@@ -425,11 +380,6 @@ void ResoundSession::build_dsp_object_lookups(){
 
 int ResoundSession::on_process(jack_nframes_t nframes){
 
-	// TODO need mutex arangment here for object creation and destruction
-	for(unsigned int n = 0; n < audioStreams_.size(); ++n){
-		audioStreams_[n]->process(nframes);
-	}
-	
 	// if we can, signal to the diskstream thread that more data can probably be loaded
 	// TODO put some sort of throttleing on this to allow jack to read a few blocks before bothering to fill buffers
 	if (pthread_mutex_trylock (&diskstreamThreadLock_) == 0) {
@@ -453,11 +403,6 @@ int ResoundSession::on_process(jack_nframes_t nframes){
 }
 
 void ResoundSession::send_osc_feedback(){
-	for(unsigned int n = 0; n < audioStreams_.size(); ++n){
-		VUMeter& meter = audioStreams_[n]->get_vu_meter();
-		std::string addr(std::string("/")+audioStreams_[n]->get_id());
-		send_osc_to_all_clients(addr.c_str(),"fff",meter.get_rms(),meter.get_peak(),meter.get_margin());
-	}
 
 	for(unsigned int n = 0; n < loudspeakers_.size(); ++n){
 		VUMeter& meter = loudspeakers_[n]->get_vu_meter();

@@ -115,8 +115,6 @@ private:
 	DynamicObjectMap dynamicObjects_;
 
 	/// a set of fast lookup index tables
-	typedef std::vector<AudioStream*> AudioStreamVector;
-	AudioStreamVector audioStreams_;
 
 	typedef std::vector<Diskstream*> DiskstreamVector;
 	DiskstreamVector diskStreams_;
@@ -176,8 +174,6 @@ public:
 	/// the method will throw if not found 
 	DynamicObject* get_dynamic_object(ObjectId id);
 
-	/// resolve an id to an actual audio stream
-	AudioStream* resolve_audiostream(ObjectId id);
 
 	/// resolve an id to an actual audio stream
 	Loudspeaker* resolve_loudspeaker(ObjectId id);
