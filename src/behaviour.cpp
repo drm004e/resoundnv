@@ -552,7 +552,7 @@ GainInsertBehaviour::GainInsertBehaviour(){}
 void GainInsertBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 
 	IOBehaviour::init_from_xml(nodeElement);
-	std::cout << "Created Example IO Behaviour " << std::endl;
+	std::cout << "Created Gain Insert Behaviour " << std::endl;
 	gain_ = get_parameter_value("gain");
 
         int chans = get_inputs().size();
@@ -572,6 +572,48 @@ void GainInsertBehaviour::process(jack_nframes_t nframes){
             float* in = inputs[0]->get_buffer(); // ignore all others for now
             float* out = get_buffer(chan).get_buffer();
             ab_copy_with_gain(in, out, nframes, gain_);
+        }
+}
+
+RingmodInsertBehaviour::RingmodInsertBehaviour(): phasor_(44100.0f,220){}
+
+void RingmodInsertBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
+
+        sinFunction_ = LookupTable::create_sine(SIN_TABLE_SIZE);
+        
+	IOBehaviour::init_from_xml(nodeElement);
+	std::cout << "Created Rindmod Insert Behaviour " << std::endl;
+        freq_ = get_parameter_value("freq");
+	gain_ = get_parameter_value("gain");
+
+        int chans = get_inputs().size();
+	assert(chans > 0);
+        for(int n = 0; n < chans; ++n){
+            create_buffer();
+        }
+}
+
+void RingmodInsertBehaviour::process(jack_nframes_t nframes){
+	gain_ = get_parameter_value("gain");
+        freq_ = get_parameter_value("freq");
+        phasor_.set_freq(freq_);
+        
+        BufferArray& inputs = get_inputs();
+        int chans = inputs.size();
+        
+        float phase = phasor_.get_phase();
+        
+        for(int chan = 0; chan < chans; ++chan){
+            phasor_.set_phase(phase);
+
+            float* in = inputs[0]->get_buffer(); // ignore all others for now
+            float* out = get_buffer(chan).get_buffer();
+            for(int n = 0; n < nframes; ++n){
+                float osc = sinFunction_->lookup_linear(phasor_.get_phase() * (float)SIN_TABLE_SIZE );
+                out[n] = in[n] * osc * gain_;
+                phasor_.tick();
+            }
+            
         }
 }
 
