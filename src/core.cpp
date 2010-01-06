@@ -658,6 +658,40 @@ void* ResoundSession::diskstream_thread (void *arg){
 	return 0;
 }
 
+
+void ResoundSession::register_buffer(BufferRef ref){
+    assert(ref.id != "");
+    assert(ref.id.find('.') != std::string::npos);
+    assert(ref.buffer);
+    BufferRefMap::iterator it = buffers_.find(ref.id);
+    if(it == buffers_.end()){
+            buffers_[ref.id] = ref;
+            std::cout << "Registered Buffer " << ref.id << std::endl;
+    } else {
+            throw Exception("non-unique name for buffer in session");
+    }
+}
+
+BufferRefVector ResoundSession::lookup_buffer(ObjectId id){
+    BufferRefVector ret;
+    if(id.find('.') != std::string::npos){
+        BufferRefMap::iterator it = buffers_.find(id);
+        if(it != buffers_.end()){
+            ret.push_back(it->second);
+        }
+    } else {
+        for(BufferRefMap::iterator it = buffers_.begin(); it != buffers_.end(); ++it){
+            ObjectId s = it->first;
+            ObjectId left = s.substr(0,s.find('.'));
+            if(id == left){
+                ret.push_back(it->second);
+            }
+            
+        }
+    }
+    return ret;
+}
+
 // ------------------------------- Globals and entry point -----------------------------------
 
 CLIOptions g_options;

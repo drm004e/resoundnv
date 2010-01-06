@@ -169,11 +169,23 @@ struct CLIOptions{
 	std::string oscPort_;
 };
 
+/// a reference to a buffer
+struct BufferRef{
+public:
+    ObjectId id;
+    AudioBuffer* buffer;
+    bool isBus;
+    bool isAlias;
+    ObjectId creator;
+};
+typedef std::map<ObjectId,BufferRef> BufferRefMap;
+typedef std::vector<BufferRef> BufferRefVector;
+
 /// a resound session will read a single xml file and register all jack and disk streams
 class ResoundSession : public JackEngine, public Resound::OSCManager{
 private:
 	/// options specified
-	CLIOptions options_;
+        CLIOptions options_;
 
 	/// a map of all dynamic objects, used as an index to keep all names unique
 	/// also enables rtti from any of the dynamic objects
@@ -196,6 +208,9 @@ private:
 	/// map of behaviour factories by plugin name
 	typedef std::map<ObjectId,BehaviourFactory> BehaviourFactoryMap;
 	BehaviourFactoryMap behaviourFactories_;
+
+
+	BufferRefMap buffers_;
 
 	/// the thread id for the diskstream loading thread
 	pthread_t diskstreamThreadId_;
@@ -257,7 +272,11 @@ public:
 	void send_osc_feedback();
 
 
+        /// register an audio buffer with a name such that it can be looked up
+        void register_buffer(BufferRef ref);
 
+        /// lookup_buffer
+        BufferRefVector lookup_buffer(ObjectId id);
 private:
 	/// check disk input buffers are full and cause a load if they are not
 	/// called by the disk input thread, syncronised by the process thread.
