@@ -79,7 +79,7 @@ void Loudspeaker::init_from_xml(const xmlpp::Element* nodeElement){
         // register the buffer
         BufferRef ref;
         std::stringstream str;
-        str << "buss." << id;
+        str << "bus." << id;
         ref.id =  str.str();
         ref.isAlias = false;
         ref.isBus = true;
@@ -119,9 +119,10 @@ Alias::Alias(const xmlpp::Node* node, ObjectId parent){
         BufferRefVector v = SESSION().lookup_buffer(ref_);
         if(v.size() == 1){
             BufferRef bref = v[0];
-            bref.id = id_;
+            bref.id = parent + std::string(".") + id_;
             bref.isAlias = true;
-            bref.creator = parent + std::string(".") + id_;
+            bref.creator = parent ;
+
             SESSION().register_buffer(bref);
         } else {
             throw Exception("Alias could not find a reference to the buffer requested.");
@@ -348,6 +349,12 @@ Loudspeaker* ResoundSession::resolve_loudspeaker(ObjectId id){
 	
 	//check for alias rules
 	ObjectId left = id.substr(0,id.find('.'));
+        /*
+        if(left == "bus"){
+            // bus is a keyword so we asume the right hand side is the loudspeaker name
+            ObjectId left = id.substr(id.find('.')+1);
+        }
+         */
         DynamicObject* ob = get_dynamic_object(left);
 	// attempt to cast them to get the type we want
 	Loudspeaker* loudspeaker = 0;

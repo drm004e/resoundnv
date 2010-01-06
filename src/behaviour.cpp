@@ -22,7 +22,7 @@
 
 void BRouteSet::create_route(const BufferRef& a, const BufferRef& b, float gain){
     if( a.isBus ) { throw Exception("Route source is not a behaviour output."); }
-    if( b.isBus ) { throw Exception("Route destination is not a bus."); }
+    if( !b.isBus ) { throw Exception("Route destination is not a bus."); }
     std::cout << "Found route 1 to 1 : " << a.id << " to " << b.id << std::endl;
     routes_.push_back(BRoute(a.buffer,b.buffer, gain ));
 }
