@@ -1,0 +1,116 @@
+Resound Development Workshop 4-6.01.2010
+========================================
+
+The ResoundNV Server is now functional. The diffusion configuration is specified in an XML file, which the ResoundNV Server reads at start-up.
+
+The Server application is implemented in C++. A suite of Python applications is to be developed for interacting with the Server. Many small utility applications is preferable to one large 'client' application as it will be easier to manage. Some of the proposed utility applications are described in 'FUTURE WORK.'
+
+In order to develop Python utility applications a Resound Server Comms Layer is needed. This will be a Python module providing generic methods for interacting with the server. Further information is given below.
+
+DOCUMENTATION
+=============
+
+Files
+=====
+resoundnv-calibrate. Calculates speaker positions automatically.
+usss-av-rig.xml - for AV studio at University of Sheffield.
+
+Chase and Multipoint Behaviours
+===============================
+Chase & Multipoint crossfade have 'slope' parameters. This is the steepness of a phasor that is mapped to a hanning window.
+
+Resound Server
+==============
+128 buffer size and 44.1k Jack settings. Smaller buffer sizes will cause problems. Larger may work but not tested. No other sample rates have been tested.
+
+XML Documentation
+=================
+X = left-to-right (0 is centre); Y=vertical (0 is floor level); Z=back-to-front (0 is centre of room)
+The key is the XML. The setup is described in one place only.
+
+Python Room Monitor
+===================
+Extra Dependencies:
+python-opengl python-gtkglext1 python-liblo
+
+Inside roommonitor.py, ResoundXMLParser takes XML file
+
+Calculates RMS level for each loudspeaker. Works from single XML file. Width of boxes = RMS; height of boxes = peak. Speakers can be labeled with tags from XML.
+
+Amplitude Panner
+================
+Specify (in XML) which loudspeakers are to be involved in the panner (does not use CLS).
+Co-ordinates (x,y,z) are specified in meters
+
+Main Development Outcomes
+=========================
+We have modified the ResoundNV Server application such that Behaviours can now be chained together. This allows DSP chains to be implemented within the diffusion setup. This required several fundamental changes to the ResoundNV Server application. Gain and Ringmod Insert Behaviours have been developed and tested.
+
+We have produced a PD patch that provides 32 OSC faders with which to control the ResoundNV server. Each fader has an adjustable range of output values and can produce either linear or logarithmic output. The patch can also send transport messages via OSC to the server in order to start and stop playback of disk streams, and to seek to particular points within a sound file.
+
+XML Documentation (In Progress)
+===============================
+Resound XML describes the sound diffusion setup, including:
+
+The loudspeaker array, including the position of each loudspeaker
+All live and sound file audio sources, with support for any number of channels per source
+The ways in which sound sources can be diffused to loudspeakers (behaviours)
+The ways in which diffusion is controlled by the user
+
+A loudspeaker is defined as in the following example:
+
+	<loudspeaker id="G1" type="Genelec 1029" port="pure_data_0:input0" x="0.00" y="0.00" z="3.00"/>
+
+The id attribute is used to identify this particular loudspeaker in other parts of the XML file, e.g. when we want to send signals to it. The type attribute is simply a way of giving the loudspeaker a description. The port attribute is where we specify which Jack port this loudspeaker is attached to. The x, y and z attributes describe the position of the loudspeaker within the venue. x refers to the left-to-right axis, with 0 being in the centre, left-of-centre being described by negative values and right-of-centre values being descirbed by positive values. The y axis is vertical, with 0 being defined as floor level. The z axis runs from front to back within the venue: 0 is in the centre; positive values are forward of the centre; negative values are behind the centre. All measurements are presumed to be in meters.
+
+A sound file to be played back directly from disk is defined as in the following example:
+
+	<diskstream id="disk1" source="/path/to/soundfile/monoSoundFile.wav" gain="1.0"/>
+
+Note that audio streams are always monophonic. The source attribute is the full path to the monophonic sound file. The gain attribute means that a gain factor can be applied to that audio stream before it goes any further in the signal chain. Again, the id attribute is used to identify this particular audio stream.
+
+FUTURE WORK
+===========
+
+General
+=======
+* Livestream and diskstream need native multichannel support.
+* Implement helper classes within Server instead of different types of behaviour. Modify behaviour classes accordingly so they work with those helper classes.
+* Diskstreams and behaviours now don't have VUMeters. We may want to reinstate this later.
+* Obtaining vector based VU information from the server. E.g. amplitude vector based on loudspeaker positions, and the rate of change of this vector.
+* Python Room Monitor - change so that XML file is passed as command line arg.
+* Build remapping of loudspeakers into the XML schema. Python tool to remap to different arrays using tags - or: is an alias in fact a tag?
+* Provide basic transport control in server, so that all diskstreams are linked to a global transport.
+* Multiple transports. And a (XML) way in which they are attached to particular diskstreams.
+* An improved 3D library for both Python and C. 3d library for dealing with translations and orientations.
+
+Future Behaviours
+=================
+* LADSPA plugin support.
+* Ambisonics. Behaviours for certain predefined arrays. Starting with decoding arrays.
+* Trim plugins for loudspeakers.
+* Spectral behaviours.
+
+Resound Server Comms Layer
+==========================
+This will be a Python module providing generic methods for interacting with the server. Functionality should include:
+	- Connecting to the server;
+	- Sending GET request to server to retrieve the current XML file;
+	- Methods for sending and receiving OSC to/from server;
+	- Starting and stopping the server on a local machine;
+	- Instruct server to load a new XML file;
+	- Pass live XML to the server;
+	- Etc.
+
+Python Client Utility Applications
+==================================
+The following Python utility applications may be useful.
+* Python tool to calibrate a single speaker and hand you the delay time. Use offline calibration file. This program can also generate information about the spectral characteristics of the loudspeakers etc.
+* XML attribute editor, with 'save' command. XML attributes are placed into the OSC address space based on ID. This allows you to 'tweak' parameters which will then be fixed during performance. Implement GET request for XML from server.
+* Performance Tool. Playback. Loading files. Mapping OSC/MIDI devices. Has a playlist manager that sends the relevant commands to the server, i.e. load this XML.
+* Python transport app. Looks for files in XML. Has transport controls. Gets current playback position from server and plots cursor. Sends new playback positions to server. Transport controls and buttons, plus visualisation of current playback position, on multiple overlayed waveforms.
+* Composition tool. Specify a file to write to, and it hands you back a multichannel wave file of the diffusion recorded by the Server.
+* Server monitoring tool. Loudspeaker monitor tool is part of this. Also gives you current playback position of diskstream(s), state of server, XML file in use, etc.
+* Multiple surfaces. E.g. faders surface; Lemur surface; Mackie surface with feedback etc etc etc. No configuration of the surface is required: it simply outputs /fader1/x, /fader2/x, etc.
+* Tools to get information back from the server e.g. beat tracking. Could be imported into PD using py/pyext.
+* Get info about current transport position from the server.
