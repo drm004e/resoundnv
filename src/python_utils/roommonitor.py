@@ -128,12 +128,17 @@ class Loudspeaker():
 	def render(self):
 		try:
 			glTranslate(self.x,self.y,self.z)
+
+
 			glColor3f(0.2,0.2,0.2)
-			#if self.peak >= 0.8: glColor3f(1.0,0.2,0.2) #  	ffa500 - orange
-			#if self.peak >= 1: glColor3f(1,0,0) #
-			draw_box(self.width + self.rms, self.height + self.peak,self.depth)
+			if self.peak >= 0.3: glColor3f(1.0,0.2,0.2) #  	ffa500 - orange
+			if self.peak >= 0.8: glColor3f(1,0,0) #
+			draw_box(self.width, self.height,self.depth)
 			glColor4f(0,1,0,0.1)
-			glutSolidSphere(self.rms+0.3,10,10)
+			if self.peak >= 0.3: glColor4f(1.0,0.2,0.2,0.1) #  	ffa500 - orange
+			if self.peak >= 0.8: glColor4f(1,0,0,0.1) #
+			glutSolidSphere(self.peak*3+0.2,10,10)
+
 		except: 
 			print "Render error"
 			# careful here because the gl library throw exceptions
