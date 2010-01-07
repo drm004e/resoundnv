@@ -1,0 +1,25 @@
+<!-- A simple stereo pair example -->
+<resound>
+<behaviour class="diskstream" id="streamA" source="testfileL.wav"/>
+<behaviour class="diskstream" id="streamB" source="testfileR.wav"/>
+
+<set id="source">
+	<alias id="L" ref="streamA.0"/>
+	<alias id="R" ref="streamB.0"/>
+</set>
+
+<loudspeaker id="G1" type="Genelec 1029" port="system:playback_1" x="-1" y="1.00" z="2" gain="1.0"/>
+<loudspeaker id="G2" type="Genelec 1029" port="system:playback_2" x="1" y="1.00" z="2" gain="1.0"/>
+
+<set id="mains">
+	<alias id="L" ref="bus.G1"/>
+	<alias id="R" ref="bus.G2"/>
+</set>
+
+<behaviour class="att" id="b1">
+	<routeset>
+		<route from="source" to="mains"/>
+	</routeset>
+	<param id="level" address="/fader1" value="1.0"/>
+</behaviour>
+</resound>
