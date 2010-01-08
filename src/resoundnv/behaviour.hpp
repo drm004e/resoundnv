@@ -56,13 +56,12 @@ public:
 
 // parameters for behaviours
 class BParam{
-	ObjectId id_;
 	float value_;
 	std::string addr_;
 public:
-	BParam(const xmlpp::Node* node);
+	BParam();
+	void init_from_xml(const xmlpp::Element* nodeElement);
 	float get_value(){ return value_; }
-	ObjectId get_id(){return id_;}
 	ObjectId get_address(){return addr_;}
 	// callback for osc
 	static int lo_cb_params(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data);
@@ -87,6 +86,9 @@ public:
 	/// some processing would occur on the way
 	virtual void process(jack_nframes_t nframes) = 0;
 
+	/// register a parameter:
+	/// this should be called in a constructor or init function prior to loading base class xml
+	void register_parameter(ObjectId id, BParam* param);
 	/// obtain a parameter value
 	// TODO this should really be some sort of fast lookup table pre-built at the start of dsp.
 	float get_parameter_value(const char* name){ return params_[name]->get_value(); }

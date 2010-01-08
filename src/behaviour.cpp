@@ -84,14 +84,16 @@ BRouteSet::BRouteSet(const xmlpp::Node* node){
 		}
 	}
 }
-BParam::BParam(const xmlpp::Node* node){
-	const xmlpp::Element* nodeElement = get_element(node);
-	id_ = get_attribute_string(nodeElement,"id");
-	addr_ = get_attribute_string(nodeElement,"address");
+
+BParam::BParam(){
+}
+void BParam::init_from_xml(const xmlpp::Element* nodeElement){
+	addr_ = get_optional_attribute_string(nodeElement,"address");
 	value_ = get_optional_attribute_float(nodeElement,"value");
-	std::cout << "Found parameter "<<id_<< " osc address " << addr_ << std::endl;
 	// at this point we should register the parameter address with osc
-	SESSION().add_method(addr_,"f", BParam::lo_cb_params, this);
+	if(addr_ != ""){
+		SESSION().add_method(addr_,"f", BParam::lo_cb_params, this);
+	}
 }
 
 int BParam::lo_cb_params(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data){
@@ -119,20 +121,30 @@ void Behaviour::init_from_xml(const xmlpp::Element* nodeElement){
 		if(child){
 			std::string name = child->get_name();
 			if(name=="param"){
-				// TODO check for this parameter in the list
-				BParam* param = new BParam(child);
-				ObjectId id = param->get_id();
+				ObjectId id = get_attribute_string(child,"id");
 				BParamMap::iterator it = params_.find(id);
-				if(it == params_.end()){
-					params_[id] = param;
-
+				if(it != params_.end()){
+					it->second->init_from_xml(child);
 				} else {
-					throw Exception("non-unique parameter name");
+					std::stringstream str;
+					str << "A behaviour parameter with id=\""<<id<<"\" does not exist.";
+					throw Exception(str.str().c_str());
 				}
 			}
 		}
 	}
 	DynamicObject::init_from_xml(nodeElement);
+}
+
+
+void Behaviour::register_parameter(ObjectId id, BParam* param){
+	BParamMap::iterator it = params_.find(id);
+	if(it == params_.end()){
+		params_[id] = param;
+
+	} else {
+		throw Exception("Cannot register parameter, non-unique parameter name.");
+	}
 }
 
 void Behaviour::create_buffer(ObjectId subId){
