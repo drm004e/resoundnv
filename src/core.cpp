@@ -191,9 +191,6 @@ ResoundSession::ResoundSession(CLIOptions options) :
         register_behaviour_factory("gain", GainInsertBehaviour::factory);
         register_behaviour_factory("ringmod", RingmodInsertBehaviour::factory);
         register_behaviour_factory("ladspa", LADSPABehaviour::factory);
-        
-	register_behaviour_factory("minimal", MinimalRouteSetBehaviour::factory);
-	register_behaviour_factory("iobehaviour", MinimalIOBehaviour::factory); // for now
 
 	init("resoundnv-session");
 

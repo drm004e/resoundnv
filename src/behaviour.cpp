@@ -86,7 +86,7 @@ BRouteSet::BRouteSet(const xmlpp::Node* node){
 }
 
 BParam::BParam(float& v, float startingValue) : value_(v){
-	v = startingValue; // remember that this is a reference
+	value_ = startingValue; // remember that this is a reference
 }
 void BParam::init_from_xml(const xmlpp::Element* nodeElement){
 	addr_ = get_optional_attribute_string(nodeElement,"address");
@@ -148,25 +148,29 @@ void Behaviour::register_parameter(ObjectId id, BParam* param){
 	}
 }
 
-void Behaviour::create_buffer(ObjectId subId){
+AudioBuffer* Behaviour::create_buffer(ObjectId subId, ObjectId forceId){
+// TODO: nasty joink here, forcing ids is not that nice but is sometimes nessersary
+// consider a redesign.
     AudioBuffer* b = new AudioBuffer();
     jack_nframes_t s = SESSION().get_buffer_size();
     b->allocate(s);
     BufferRef ref;
     std::stringstream str;
+    ObjectId id = get_id(); // this may be "" if the behaviour has not yet initialised from xml
+    if(forceId != "") id = forceId; // in which case we may be able to force.
     if(subId != ""){
-        str << get_id() << "." << subId;
+        str << id << "." << subId;
     } else {
-        str << get_id() << "." << buffers_.size();
+        str << id << "." << buffers_.size();
     }
     ref.id =  str.str();
     ref.isAlias = false;
     ref.isBus = false;
-    ref.creator = get_id();
+    ref.creator = id;
     ref.buffer = b;
     SESSION().register_buffer(ref);
     buffers_.push_back(b);
-    
+    return b;
 }
 
 // ---------------------------------------
@@ -335,8 +339,8 @@ void RouteSetBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 	Behaviour::init_from_xml(nodeElement);
 }
 
-IOBehaviour::IOBehaviour(){}
-void IOBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
+IOHelper::IOHelper(){}
+void IOHelper::init_from_xml(const xmlpp::Element* nodeElement){
 	// TODO Although basic inputs and outputs are created this does not consider cass or cls as groups
 	// This class of behaviour uses the i/o interpretation for CASS and CLS
 	xmlpp::Node::NodeList nodes;
@@ -352,7 +356,7 @@ void IOBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
                                 if(v.size() == 1){
                                     inputs_.push_back(v[0].buffer);
                                 } else {
-                                    throw Exception("IOBehaviour <input> tags must refer to single buffers");
+                                    throw Exception("IOHelper <input> tags must refer to single buffers");
                                 }
 
 			} else if(name=="output"){
@@ -362,7 +366,6 @@ void IOBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 			}
 		}
 	}
-	Behaviour::init_from_xml(nodeElement);
 }
 
 void AttBehaviour::process(jack_nframes_t nframes){
@@ -510,26 +513,26 @@ AmpPanBehaviour::AmpPanBehaviour(){
 }
 
 void AmpPanBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
-
-	IOBehaviour::init_from_xml(nodeElement);
-
 	std::cout << "Created AmpPan io based behaviour object!" << std::endl;
+	io_.init_from_xml(nodeElement);
 
 	// identify the number off outputs and get each ones gain
 	// setup storage for previous gain suitable for interpolation
-	LoudspeakerArray& outputs = get_outputs();
+	IOHelper::LoudspeakerArray& outputs = io_.get_outputs();
 	oldGains_ = new float[outputs.size()];
 	for(unsigned int n = 0; n < outputs.size(); ++n){
 		oldGains_[n] = 0.0f;
 	}
-	assert(get_inputs().size() > 0);
+	assert(io_.get_inputs().size() > 0);
+	
+	Behaviour::init_from_xml(nodeElement);
 }
 
 void AmpPanBehaviour::process(jack_nframes_t nframes){
 
-	BufferArray& inputs = get_inputs();
+	IOHelper::BufferArray& inputs = io_.get_inputs();
 	float* in = inputs[0]->get_buffer(); // ignore all others for now
-	LoudspeakerArray& outputs = get_outputs();
+	IOHelper::LoudspeakerArray& outputs = io_.get_outputs();
 	for(unsigned int o = 0; o < outputs.size(); ++o){
 		Vec3 dPos = pos_ - outputs[o]->get_position();
 		float D = dPos.mag();
@@ -549,19 +552,20 @@ GainInsertBehaviour::GainInsertBehaviour(){
 
 void GainInsertBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 
-	IOBehaviour::init_from_xml(nodeElement);
 	std::cout << "Created Gain Insert Behaviour " << std::endl;
-
-        int chans = get_inputs().size();
+	io_.init_from_xml(nodeElement);
+	
+        int chans = io_.get_inputs().size();
 	assert(chans > 0);
         for(int n = 0; n < chans; ++n){
             create_buffer();
         }
+        Behaviour::init_from_xml(nodeElement);
 }
 
 void GainInsertBehaviour::process(jack_nframes_t nframes){
 
-        BufferArray& inputs = get_inputs();
+        IOHelper::BufferArray& inputs = io_.get_inputs();
         int chans = inputs.size();
         for(int chan = 0; chan < chans; ++chan){
            
@@ -581,21 +585,22 @@ void RingmodInsertBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 
 
         
-	IOBehaviour::init_from_xml(nodeElement);
+	io_.init_from_xml(nodeElement);
 	std::cout << "Created Rindmod Insert Behaviour " << std::endl;
 
-        int chans = get_inputs().size();
+        int chans = io_.get_inputs().size();
 	assert(chans > 0);
         for(int n = 0; n < chans; ++n){
             create_buffer();
         }
+	Behaviour::init_from_xml(nodeElement);
 }
 
 void RingmodInsertBehaviour::process(jack_nframes_t nframes){
 
         phasor_.set_freq(freq_);
         
-        BufferArray& inputs = get_inputs();
+        IOHelper::BufferArray& inputs = io_.get_inputs();
         int chans = inputs.size();
         
         float phase = phasor_.get_phase();
@@ -619,31 +624,58 @@ LADSPABehaviour::LADSPABehaviour(){}
 
 void LADSPABehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 	std::cout << "Created LDSPA Behaviour " << std::endl; 
-	plugName = get_attribute_string(nodeElement,"plug");
-	descriptor = SESSION().get_ladspa_host().instantiate(plugName);
+	io_.init_from_xml(nodeElement);
+	ObjectId id = get_attribute_string(nodeElement,"id");
 	
-	for(int n = 0; n < descriptor->PortCount;++n){
-		int pd = descriptor->PortDescriptors[n];
+	plugName_ = get_attribute_string(nodeElement,"plug");
+	descriptor_ = SESSION().get_ladspa_host().get_descriptor(plugName_);
+	instance_ = descriptor_->instantiate(descriptor_, 44100);
+	int inCount = 0;
+	int outCount = 0;
+	int controlCount = 0;
+	for(int n = 0; n < descriptor_->PortCount;++n){
+		int pd = descriptor_->PortDescriptors[n];
 		if(pd & LADSPA_PORT_AUDIO && pd & LADSPA_PORT_INPUT){
-			std::cout << "Audio Input Port: " << descriptor->PortNames[n] << std::endl;
+			std::cout << "Audio Input Port: " << descriptor_->PortNames[n] << std::endl;
 			// should tally this with the first input we find and connect
+			if (inCount < io_.get_inputs().size() ){
+				float* inBuffer = io_.get_inputs()[inCount]->get_buffer();
+				descriptor_->connect_port(instance_,n,inBuffer);
+				++inCount;
+			} else {
+				throw Exception("Not enough inputs specified for LADSPA plugin.");
+			}
+			
 		} else if(pd & LADSPA_PORT_AUDIO && pd & LADSPA_PORT_OUTPUT){
-			std::cout << "Audio Output Port: " << descriptor->PortNames[n] << std::endl;
+			std::cout << "Audio Output Port: " << descriptor_->PortNames[n] << std::endl;
 			// should create an output buffer and connect
+			AudioBuffer* b = create_buffer("",id); // TODO: nasty joink here, has to force the id because the behaviour id is not yet found in base class.
+			descriptor_->connect_port(instance_,n,b->get_buffer());
+			++outCount;
 		} else if(pd & LADSPA_PORT_CONTROL && pd & LADSPA_PORT_INPUT){
-			std::cout << "Control Input Port: " << descriptor->PortNames[n] << std::endl;
+			descriptor_->PortRangeHints[n];
+			std::cout << "Control Input Port: " 
+				<< descriptor_->PortNames[n] 
+				<< " (" << descriptor_->PortRangeHints[n].LowerBound
+				<< " : "<< descriptor_->PortRangeHints[n].UpperBound << " )" << std::endl;
 			// create a parameter for this
-			//register_parameter(descriptor->PortNames[n],new BParam());
+			controlPortValues_.push_back(0.0f);
+			float* v = &controlPortValues_[controlCount];
+			register_parameter(descriptor_->PortNames[n],new BParam(*v,0.0f));
+			descriptor_->connect_port(instance_,n,v);
+			++controlCount;
 		} else {
-			std::cout << "Unsual Port: "<< descriptor->PortNames[n] << std::endl;
+			std::cout << "Unsual Port: "<< descriptor_->PortNames[n] << std::endl;
+			throw Exception("LADSPA Unusual port.");
 		}
 	}
-	
-	IOBehaviour::init_from_xml(nodeElement);
+	Behaviour::init_from_xml(nodeElement);
+	// activate after fully initialised
+	descriptor_->activate(instance_);
 }
 
 void LADSPABehaviour::process(jack_nframes_t nframes){
-
+	descriptor_->run(instance_, nframes);
 }
 
 
