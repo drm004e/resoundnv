@@ -127,7 +127,7 @@ void Behaviour::init_from_xml(const xmlpp::Element* nodeElement){
 					it->second->init_from_xml(child);
 				} else {
 					std::stringstream str;
-					str << "A behaviour parameter with id=\""<<id<<"\" does not exist.";
+					str << "A parameter with id=\""<<id<<"\" is not registered for this behaviour.";
 					throw Exception(str.str().c_str());
 				}
 			}
@@ -387,7 +387,11 @@ void AttBehaviour::process(jack_nframes_t nframes){
 	//std::cout << "AttBehaviour::process" << std::endl;
 }
 
-MultipointCrossfadeBehaviour::MultipointCrossfadeBehaviour(){}
+MultipointCrossfadeBehaviour::MultipointCrossfadeBehaviour(){
+	register_parameter("position",new BParam());
+	register_parameter("gain",new BParam());
+	register_parameter("slope",new BParam());
+}
 
 void MultipointCrossfadeBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 
@@ -453,7 +457,12 @@ void MultipointCrossfadeBehaviour::process(jack_nframes_t nframes){
 	}
 
 }
-ChaseBehaviour::ChaseBehaviour() : phasor(44100.0f/128.0f,1){}
+ChaseBehaviour::ChaseBehaviour() : phasor(44100.0f/128.0f,1){
+	register_parameter("freq",new BParam());
+	register_parameter("phase",new BParam());
+	register_parameter("gain",new BParam());
+	register_parameter("slope",new BParam());
+}
 
 void ChaseBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 	std::cout << "Created ChaseBehaviour routeset behaviour object!" << std::endl;
@@ -516,7 +525,12 @@ void ChaseBehaviour::process(jack_nframes_t nframes){
 
 }
 
-AmpPanBehaviour::AmpPanBehaviour(){}
+AmpPanBehaviour::AmpPanBehaviour(){
+	register_parameter("x",new BParam());
+	register_parameter("y",new BParam());
+	register_parameter("z",new BParam());
+	register_parameter("gain",new BParam());
+}
 
 void AmpPanBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 
@@ -560,7 +574,9 @@ void AmpPanBehaviour::process(jack_nframes_t nframes){
 }
 
 
-GainInsertBehaviour::GainInsertBehaviour(){}
+GainInsertBehaviour::GainInsertBehaviour(){
+	register_parameter("gain",new BParam());
+}
 
 void GainInsertBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 
@@ -588,11 +604,15 @@ void GainInsertBehaviour::process(jack_nframes_t nframes){
         }
 }
 
-RingmodInsertBehaviour::RingmodInsertBehaviour(): phasor_(44100.0f,220){}
+RingmodInsertBehaviour::RingmodInsertBehaviour(): phasor_(44100.0f,220){
+	register_parameter("freq",new BParam());
+	register_parameter("gain",new BParam());
+	sinFunction_ = LookupTable::create_sine(SIN_TABLE_SIZE);
+}
 
 void RingmodInsertBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 
-        sinFunction_ = LookupTable::create_sine(SIN_TABLE_SIZE);
+
         
 	IOBehaviour::init_from_xml(nodeElement);
 	std::cout << "Created Rindmod Insert Behaviour " << std::endl;
@@ -649,6 +669,7 @@ void LADSPABehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 		} else if(pd & LADSPA_PORT_CONTROL && pd & LADSPA_PORT_INPUT){
 			std::cout << "Control Input Port: " << descriptor->PortNames[n] << std::endl;
 			// create a parameter for this
+			register_parameter(descriptor->PortNames[n],new BParam());
 		} else {
 			std::cout << "Unsual Port: "<< descriptor->PortNames[n] << std::endl;
 		}

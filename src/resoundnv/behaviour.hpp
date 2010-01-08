@@ -204,6 +204,7 @@ public:
 
 	AttBehaviour(){
 		std::cout << "Created Att routeset behaviour object!" << std::endl;
+		register_parameter("level",new BParam());
 	}
 
 	virtual void process(jack_nframes_t nframes);
