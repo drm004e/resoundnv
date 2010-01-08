@@ -38,7 +38,7 @@ public:
 	void load_library(const char* path);
 
 	/// get a descriptor by name
-	const LADSPA_Descriptor* instantiate(const char* name);
+	const LADSPA_Descriptor* instantiate(const std::string& name);
 };
 
 #endif

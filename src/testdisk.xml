@@ -29,7 +29,7 @@
 	</cass>
 
 
-	<loudspeaker id="G1" type="Genelec 1029" port="system:playback_1" x="-1" y="1.00" z="2" gain="1.0"/>
+	<loudspeaker id="G1" type="Genelec 1029" port="system:playback_5" x="-1" y="1.00" z="2" gain="1.0"/>
 	<loudspeaker id="G2" type="Genelec 1029" port="system:playback_2" x="1" y="1.00" z="2" gain="1.0"/>
 
 	<cls id="mains">

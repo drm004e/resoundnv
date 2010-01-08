@@ -76,7 +76,7 @@ void LadspaHost::load_library(const char* path){
 	}
 }
 
-const LADSPA_Descriptor* LadspaHost::instantiate(const char* name){
+const LADSPA_Descriptor* LadspaHost::instantiate(const std::string& name){
 	LADSPADescriptorMap::iterator it = m_descriptors.find(name);
 	if(it != m_descriptors.end()){
 		return it->second;

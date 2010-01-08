@@ -45,7 +45,7 @@ BRouteSet::BRouteSet(const xmlpp::Node* node){
 				// get the from and to attributes
 				ObjectId from = get_attribute_string(child,"from");
 				ObjectId to = get_attribute_string(child,"to");
-				float gain = get_optional_attribute_float(child,"gain");
+				float gain = get_optional_attribute_float(child,"gain", 1.0);
 
                                 BufferRefVector fromRefs = SESSION().lookup_buffer(from);
                                 BufferRefVector toRefs = SESSION().lookup_buffer(to);
@@ -119,6 +119,7 @@ void Behaviour::init_from_xml(const xmlpp::Element* nodeElement){
 		if(child){
 			std::string name = child->get_name();
 			if(name=="param"){
+				// TODO check for this parameter in the list
 				BParam* param = new BParam(child);
 				ObjectId id = param->get_id();
 				BParamMap::iterator it = params_.find(id);
@@ -616,5 +617,38 @@ void RingmodInsertBehaviour::process(jack_nframes_t nframes){
             
         }
 }
+
+// --------------
+LADSPABehaviour::LADSPABehaviour(){}
+
+void LADSPABehaviour::init_from_xml(const xmlpp::Element* nodeElement){
+	std::cout << "Created LDSPA Behaviour " << std::endl; 
+	plugName = get_attribute_string(nodeElement,"plug");
+	descriptor = SESSION().get_ladspa_host().instantiate(plugName);
+	
+	for(int n = 0; n < descriptor->PortCount;++n){
+		int pd = descriptor->PortDescriptors[n];
+		if(pd & LADSPA_PORT_AUDIO && pd & LADSPA_PORT_INPUT){
+			std::cout << "Audio Input Port: " << descriptor->PortNames[n] << std::endl;
+			// should tally this with the first input we find and connect
+		} else if(pd & LADSPA_PORT_AUDIO && pd & LADSPA_PORT_OUTPUT){
+			std::cout << "Audio Output Port: " << descriptor->PortNames[n] << std::endl;
+			// should create an output buffer and connect
+		} else if(pd & LADSPA_PORT_CONTROL && pd & LADSPA_PORT_INPUT){
+			std::cout << "Control Input Port: " << descriptor->PortNames[n] << std::endl;
+			// create a parameter for this
+		} else {
+			std::cout << "Unsual Port: "<< descriptor->PortNames[n] << std::endl;
+		}
+	}
+	
+	IOBehaviour::init_from_xml(nodeElement);
+}
+
+void LADSPABehaviour::process(jack_nframes_t nframes){
+
+}
+
+
 
 
