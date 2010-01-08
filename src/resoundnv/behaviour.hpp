@@ -275,7 +275,7 @@ class LADSPABehaviour : public Behaviour {
 	const LADSPA_Descriptor *descriptor_;
 	LADSPA_Handle instance_;
 	IOHelper io_;
-	std::vector<float> controlPortValues_;
+	std::vector<float*> controlPortValues_;
 public:
 	LADSPABehaviour();
 	void init_from_xml(const xmlpp::Element* nodeElement);

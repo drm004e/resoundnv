@@ -659,8 +659,8 @@ void LADSPABehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 				<< " (" << descriptor_->PortRangeHints[n].LowerBound
 				<< " : "<< descriptor_->PortRangeHints[n].UpperBound << " )" << std::endl;
 			// create a parameter for this
-			controlPortValues_.push_back(0.0f);
-			float* v = &controlPortValues_[controlCount];
+			controlPortValues_.push_back(new float(0.0));
+			float* v = controlPortValues_[controlCount];
 			register_parameter(descriptor_->PortNames[n],new BParam(*v,0.0f));
 			descriptor_->connect_port(instance_,n,v);
 			++controlCount;
