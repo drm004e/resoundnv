@@ -1,0 +1,56 @@
+<!-- A simple stereo pair example -->
+<resoundnv>
+<behaviour class="diskstream" id="streamA" source="/home/dave/sounds/mozartL.wav"/>
+<behaviour class="diskstream" id="streamB" source="/home/dave/sounds/mozartR.wav"/>
+
+
+<!--
+<behaviour class="ladspa" id="plugin1" plug="Simple Delay Line">
+	<input ref="streamA.0"/>
+	<param id="Delay (Seconds)" address="/delay" value="1"/>
+	<param id="Dry/Wet Balance" address="/dry" value="1"/>
+</behaviour>
+-->
+
+<behaviour class="ladspa" id="plugin1" plug="GVerb">
+	<input ref="streamA.0"/>
+	<!--
+	Control Input Port: Roomsize (m) (1 : 300 )
+	Control Input Port: Reverb time (s) (0.1 : 30 )
+	Control Input Port: Damping (0 : 1 )
+	Control Input Port: Input bandwidth (0 : 1 )
+	Control Input Port: Dry signal level (dB) (-70 : 0 )
+	Control Input Port: Early reflection level (dB) (-70 : 0 )
+	Control Input Port: Tail level (dB) (-70 : 0 )
+	-->
+
+	<param id="Roomsize (m)" address="/a" value="75.75"/>
+	<param id="Reverb time (s)" address="/b" value="16"/>
+	<param id="Damping" address="/c" value="0.5"/>
+	<param id="Input bandwidth" address="/d" value="0.75"/>
+	<param id="Dry signal level (dB)" address="/a" value="-17.0"/>
+	<param id="Early reflection level (dB)" address="/b" value="0"/>
+	<param id="Tail level (dB)" address="/c" value="-4.0"/>
+
+</behaviour>
+
+<set id="source">
+	<alias id="L" ref="plugin1.0"/>
+	<alias id="R" ref="plugin1.1"/>
+</set>
+
+<loudspeaker id="G1" type="Genelec 1029" port="system:playback_1" x="-1" y="1.00" z="2"/>
+<loudspeaker id="G2" type="Genelec 1029" port="system:playback_2" x="1" y="1.00" z="2"/>
+
+<set id="mains">
+	<alias id="L" ref="bus.G1"/>
+	<alias id="R" ref="bus.G2"/>
+</set>
+
+<behaviour class="att" id="b1">
+	<routeset>
+		<route from="source" to="mains"/>
+	</routeset>
+	<param id="level" address="/fader1" value="0.2"/>
+</behaviour>
+</resoundnv>
