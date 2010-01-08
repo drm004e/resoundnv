@@ -85,7 +85,8 @@ BRouteSet::BRouteSet(const xmlpp::Node* node){
 	}
 }
 
-BParam::BParam(){
+BParam::BParam(float& v, float startingValue) : value_(v){
+	v = startingValue; // remember that this is a reference
 }
 void BParam::init_from_xml(const xmlpp::Element* nodeElement){
 	addr_ = get_optional_attribute_string(nodeElement,"address");
@@ -367,7 +368,7 @@ void IOBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 void AttBehaviour::process(jack_nframes_t nframes){
 	// ok we would get all the routes for the first routeset
 	// then we do buffer copy for each one applying our current gain setting
-	float level = get_parameter_value("level");
+	float level = level_;
 	// only interested in the first routeset
 	BRouteSetArray& routeSets = get_route_sets();
 	if(routeSets.size() > 0){
@@ -388,9 +389,9 @@ void AttBehaviour::process(jack_nframes_t nframes){
 }
 
 MultipointCrossfadeBehaviour::MultipointCrossfadeBehaviour(){
-	register_parameter("position",new BParam());
-	register_parameter("gain",new BParam());
-	register_parameter("slope",new BParam());
+	register_parameter("position",new BParam(position_,0.0f));
+	register_parameter("gain",new BParam(gain_,0.0f));
+	register_parameter("slope",new BParam(slope_,0.0f));
 }
 
 void MultipointCrossfadeBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
@@ -405,15 +406,8 @@ void MultipointCrossfadeBehaviour::init_from_xml(const xmlpp::Element* nodeEleme
 	// the indexs are used to table lookup into a hanning window function which is then applied modified by apropriate factors.
 
 
-
 	hannFunction = LookupTable::create_hann(HANN_TABLE_SIZE);
-
 	RouteSetBehaviour::init_from_xml(nodeElement);	
-
-	position_ = get_parameter_value("position");
-	gain_= get_parameter_value("gain");
-	slope_= get_parameter_value("slope");
-	
 }
 void MultipointCrossfadeBehaviour::process(jack_nframes_t nframes){
 
@@ -422,11 +416,6 @@ void MultipointCrossfadeBehaviour::process(jack_nframes_t nframes){
 	BRouteSetArray& routeSets = get_route_sets();
 	int numRoutes = routeSets.size();
 	float N = (float)numRoutes;
-	slope_= clip(get_parameter_value("slope"),1,1000); // TODO this would be better with a clip_lower_bound function
-
-	position_ = clip(get_parameter_value("position"),0,1) * slope_;
-	gain_= get_parameter_value("gain");
-
 	float f = slope_;
 	// offset factor (1-1/f)/(N-1)*f
 	float offsetFactor = (1.0f - 1.0f/f)/(N-1.0f)*f;
@@ -458,24 +447,17 @@ void MultipointCrossfadeBehaviour::process(jack_nframes_t nframes){
 
 }
 ChaseBehaviour::ChaseBehaviour() : phasor(44100.0f/128.0f,1){
-	register_parameter("freq",new BParam());
-	register_parameter("phase",new BParam());
-	register_parameter("gain",new BParam());
-	register_parameter("slope",new BParam());
+	register_parameter("freq",new BParam(freq_,1.0f));
+	register_parameter("phase",new BParam(phase_,0.0f));
+	register_parameter("gain",new BParam(gain_,0.0));
+	register_parameter("slope",new BParam(slope_,1.5));
+	hannFunction = LookupTable::create_hann(HANN_TABLE_SIZE);
 }
 
 void ChaseBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 	std::cout << "Created ChaseBehaviour routeset behaviour object!" << std::endl;
 	// this is based on the multipoint crossfader but uses a phasor to control position
-	hannFunction = LookupTable::create_hann(HANN_TABLE_SIZE);
-
 	RouteSetBehaviour::init_from_xml(nodeElement);
-
-	freq_ = get_parameter_value("freq");
-	phase_ = get_parameter_value("phase");
-	gain_= get_parameter_value("gain");
-	slope_= get_parameter_value("slope");
-
 	phasor.set_phase(phase_);
 }
 void ChaseBehaviour::process(jack_nframes_t nframes){
@@ -483,17 +465,12 @@ void ChaseBehaviour::process(jack_nframes_t nframes){
 	BRouteSetArray& routeSets = get_route_sets();
 	int numRoutes = routeSets.size();
 	float N = (float)numRoutes;
-	slope_= clip(get_parameter_value("slope"),1,1000); // TODO this would be better with a clip_lower_bound function
 
-	// TODO this is ineficient and should really use a messaging callback system
-	freq_ = clip(get_parameter_value("freq"),-50,50);
 	phasor.set_freq(freq_);
 
 	// the chase gets its position from the phasor
 	float phase = clip(phasor.get_phase(),0,1);
 	phasor.tick();
-
-	gain_= get_parameter_value("gain");
 
 	float f = slope_;
 
@@ -526,10 +503,10 @@ void ChaseBehaviour::process(jack_nframes_t nframes){
 }
 
 AmpPanBehaviour::AmpPanBehaviour(){
-	register_parameter("x",new BParam());
-	register_parameter("y",new BParam());
-	register_parameter("z",new BParam());
-	register_parameter("gain",new BParam());
+	register_parameter("x",new BParam(pos_.x,0));
+	register_parameter("y",new BParam(pos_.y,0));
+	register_parameter("z",new BParam(pos_.z,0));
+	register_parameter("gain",new BParam(gain_,0));
 }
 
 void AmpPanBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
@@ -537,10 +514,6 @@ void AmpPanBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 	IOBehaviour::init_from_xml(nodeElement);
 
 	std::cout << "Created AmpPan io based behaviour object!" << std::endl;
-	pos_.x = get_parameter_value("x");
-	pos_.y = get_parameter_value("y");
-	pos_.z = get_parameter_value("z");
-	gain_ = get_parameter_value("gain");
 
 	// identify the number off outputs and get each ones gain
 	// setup storage for previous gain suitable for interpolation
@@ -553,10 +526,6 @@ void AmpPanBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 }
 
 void AmpPanBehaviour::process(jack_nframes_t nframes){
-	pos_.x = get_parameter_value("x");
-	pos_.y = get_parameter_value("y");
-	pos_.z = get_parameter_value("z");
-	gain_ = get_parameter_value("gain");
 
 	BufferArray& inputs = get_inputs();
 	float* in = inputs[0]->get_buffer(); // ignore all others for now
@@ -575,14 +544,13 @@ void AmpPanBehaviour::process(jack_nframes_t nframes){
 
 
 GainInsertBehaviour::GainInsertBehaviour(){
-	register_parameter("gain",new BParam());
+	register_parameter("gain",new BParam(gain_,1.0));
 }
 
 void GainInsertBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 
 	IOBehaviour::init_from_xml(nodeElement);
 	std::cout << "Created Gain Insert Behaviour " << std::endl;
-	gain_ = get_parameter_value("gain");
 
         int chans = get_inputs().size();
 	assert(chans > 0);
@@ -592,8 +560,7 @@ void GainInsertBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 }
 
 void GainInsertBehaviour::process(jack_nframes_t nframes){
-	gain_ = get_parameter_value("gain");
-       
+
         BufferArray& inputs = get_inputs();
         int chans = inputs.size();
         for(int chan = 0; chan < chans; ++chan){
@@ -605,8 +572,8 @@ void GainInsertBehaviour::process(jack_nframes_t nframes){
 }
 
 RingmodInsertBehaviour::RingmodInsertBehaviour(): phasor_(44100.0f,220){
-	register_parameter("freq",new BParam());
-	register_parameter("gain",new BParam());
+	register_parameter("freq",new BParam(freq_,220));
+	register_parameter("gain",new BParam(gain_,1.0));
 	sinFunction_ = LookupTable::create_sine(SIN_TABLE_SIZE);
 }
 
@@ -616,8 +583,6 @@ void RingmodInsertBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
         
 	IOBehaviour::init_from_xml(nodeElement);
 	std::cout << "Created Rindmod Insert Behaviour " << std::endl;
-        freq_ = get_parameter_value("freq");
-	gain_ = get_parameter_value("gain");
 
         int chans = get_inputs().size();
 	assert(chans > 0);
@@ -627,8 +592,7 @@ void RingmodInsertBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 }
 
 void RingmodInsertBehaviour::process(jack_nframes_t nframes){
-	gain_ = get_parameter_value("gain");
-        freq_ = get_parameter_value("freq");
+
         phasor_.set_freq(freq_);
         
         BufferArray& inputs = get_inputs();
@@ -669,7 +633,7 @@ void LADSPABehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 		} else if(pd & LADSPA_PORT_CONTROL && pd & LADSPA_PORT_INPUT){
 			std::cout << "Control Input Port: " << descriptor->PortNames[n] << std::endl;
 			// create a parameter for this
-			register_parameter(descriptor->PortNames[n],new BParam());
+			//register_parameter(descriptor->PortNames[n],new BParam());
 		} else {
 			std::cout << "Unsual Port: "<< descriptor->PortNames[n] << std::endl;
 		}
