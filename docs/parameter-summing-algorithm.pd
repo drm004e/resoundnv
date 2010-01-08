@@ -1,12 +1,12 @@
-#N canvas 386 302 654 525 10;
+#N canvas 386 302 767 603 10;
 #X obj 133 -62 hsl 128 15 0 127 0 0 empty empty empty -2 -8 0 10 -262144
--1 -1 0 1;
-#X obj 358 -90 hsl 128 15 0 127 0 0 empty empty empty -2 -8 0 10 -262144
--1 -1 0 1;
+-1 -1 12700 1;
+#X obj 311 -138 hsl 128 15 0 127 0 0 empty empty empty -2 -8 0 10 -262144
+-1 -1 12700 1;
 #X floatatom 175 287 5 0 0 0 - - -;
 #X obj 22 161 * -1;
 #X obj 176 361 hsl 128 15 0 127 0 0 empty empty empty -2 -8 0 10 -262144
--1 -1 0 1;
+-1 -1 7941 1;
 #X obj 57 14 t f b;
 #X floatatom 89 86 5 0 0 0 - - -;
 #X floatatom 50 86 5 0 0 0 - - -;
@@ -33,13 +33,21 @@
 #X obj 65 -29 t f f;
 #X obj 173 311 clip 0 127;
 #X floatatom 173 336 5 0 0 0 - - -;
-#X obj 373 149 * -0.5;
-#X text 53 -144 demonstration of parameter summing algorithm as per
+#X text 68 -220 demonstration of parameter summing algorithm as per
 M2 and Resound.;
-#X text 37 -112 One parameter is influenced by two or more input controls
+#X text 67 -194 One parameter is influenced by two or more input controls
 ;
+#X obj 373 149 * 0.2;
+#X obj 451 -139 line;
+#X floatatom 356 -92 5 0 0 0 - - -;
+#X msg 454 -109 set \$1;
+#X msg 448 -170 0 1000;
+#X obj 308 -168 ctlin 2;
+#X obj 512 -108 ctlout 2;
+#X msg 504 -171 127 2000;
+#X msg 570 -170 64 2000;
 #X connect 0 0 28 0;
-#X connect 1 0 27 0;
+#X connect 1 0 35 0;
 #X connect 2 0 29 0;
 #X connect 3 0 10 0;
 #X connect 5 0 9 1;
@@ -62,7 +70,7 @@ M2 and Resound.;
 #X connect 18 1 22 0;
 #X connect 19 0 21 1;
 #X connect 20 0 21 0;
-#X connect 21 0 31 0;
+#X connect 21 0 33 0;
 #X connect 22 0 20 0;
 #X connect 23 0 14 0;
 #X connect 27 0 18 0;
@@ -71,4 +79,13 @@ M2 and Resound.;
 #X connect 28 1 6 0;
 #X connect 29 0 30 0;
 #X connect 30 0 4 0;
-#X connect 31 0 23 0;
+#X connect 33 0 23 0;
+#X connect 34 0 36 0;
+#X connect 34 0 39 0;
+#X connect 34 0 35 0;
+#X connect 35 0 27 0;
+#X connect 36 0 1 0;
+#X connect 37 0 34 0;
+#X connect 38 0 1 0;
+#X connect 40 0 34 0;
+#X connect 41 0 34 0;
