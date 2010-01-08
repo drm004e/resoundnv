@@ -554,11 +554,12 @@ void GainInsertBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
 
 	std::cout << "Created Gain Insert Behaviour " << std::endl;
 	io_.init_from_xml(nodeElement);
+	ObjectId id = get_attribute_string(nodeElement,"id");
 	
         int chans = io_.get_inputs().size();
 	assert(chans > 0);
         for(int n = 0; n < chans; ++n){
-            create_buffer();
+            create_buffer("",id);// TODO: nasty joink here, has to force the id
         }
         Behaviour::init_from_xml(nodeElement);
 }
@@ -587,11 +588,11 @@ void RingmodInsertBehaviour::init_from_xml(const xmlpp::Element* nodeElement){
         
 	io_.init_from_xml(nodeElement);
 	std::cout << "Created Rindmod Insert Behaviour " << std::endl;
-
+	ObjectId id = get_attribute_string(nodeElement,"id");
         int chans = io_.get_inputs().size();
 	assert(chans > 0);
         for(int n = 0; n < chans; ++n){
-            create_buffer();
+            create_buffer("",id);// TODO: nasty joink here, has to force the id
         }
 	Behaviour::init_from_xml(nodeElement);
 }
