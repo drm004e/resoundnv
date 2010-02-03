@@ -1,6 +1,6 @@
 The following are required:
 
-sudo apt-get install cmake build-essential libboost-dev libglib2.0-dev libxml2-dev libsigc++-2.0-dev libglibmm-2.4-dev libxml++2.6-dev libjack0.100.0-dev liblo0-dev libsndfile1-dev python-opengl python-gtkglext1 python-liblo
+sudo apt-get install cmake build-essential libboost-dev libglib2.0-dev libxml2-dev libsigc++-2.0-dev libglibmm-2.4-dev libxml++2.6-dev libjack0.100.0-dev liblo0-dev libsndfile1-dev python-opengl python-gtkglext1 python-liblo libboost-program-options1.40-dev libsndfile1-dev
 
 ---- Liblo
 You will also need the latest version of liblo which must be compiled.
